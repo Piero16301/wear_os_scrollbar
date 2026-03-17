@@ -10,6 +10,7 @@ import 'wear_os_scrollbar_platform_interface.dart';
 class MethodChannelWearOsScrollbar extends WearOsScrollbarPlatform {
   /// Creates a [MethodChannelWearOsScrollbar].
   MethodChannelWearOsScrollbar();
+
   /// The Event channel used to interact with the native platform.
   @visibleForTesting
   final eventChannel = const EventChannel('wear_os_scrollbar/rotary');
