@@ -6,21 +6,28 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   MethodChannelWearOsScrollbar platform = MethodChannelWearOsScrollbar();
-  const MethodChannel channel = MethodChannel('wear_os_scrollbar');
+  const MethodChannel channel = MethodChannel('wear_os_scrollbar/rotary');
 
-  setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-          return '42';
-        });
+  test('rotaryScrollEvents stream exists and is correct type', () {
+    expect(platform.rotaryScrollEvents, isNotNull);
+    expect(platform.rotaryScrollEvents, isInstanceOf<Stream<double>>());
   });
 
-  tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, null);
-  });
+  test('rotaryScrollEvents maps events correctly', () async {
+    final events = <double>[];
+    final subscription = platform.rotaryScrollEvents.listen((event) {
+      events.add(event);
+    });
 
-  test('getPlatformVersion', () async {
-    expect(await platform.getPlatformVersion(), '42');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .handlePlatformMessage(
+      channel.name,
+      const StandardMethodCodec().encodeSuccessEnvelope(42.0),
+      (data) {},
+    );
+
+    await Future.delayed(Duration.zero);
+    expect(events, [42.0]);
+    await subscription.cancel();
   });
 }

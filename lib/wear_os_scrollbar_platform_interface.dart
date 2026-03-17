@@ -23,7 +23,8 @@ abstract class WearOsScrollbarPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<String?> getPlatformVersion() {
-    throw UnimplementedError('platformVersion() has not been implemented.');
+  /// Stream of rotary scroll events from the native platform
+  Stream<double> get rotaryScrollEvents {
+    throw UnimplementedError('rotaryScrollEvents has not been implemented.');
   }
 }
