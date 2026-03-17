@@ -15,6 +15,7 @@ class MethodChannelWearOsScrollbar extends WearOsScrollbarPlatform {
   Stream<double>? _rotaryScrollEvents;
 
   @override
+
   /// Stream of rotary scroll events from the native platform.
   Stream<double> get rotaryScrollEvents {
     _rotaryScrollEvents ??= eventChannel

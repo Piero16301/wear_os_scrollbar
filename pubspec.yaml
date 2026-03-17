@@ -1,6 +1,6 @@
 name: wear_os_scrollbar
 description: A Flutter plugin to show Material 3 Expressive scroll indicator for WearOS with customizable haptic response.
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/Piero16301/wear_os_scrollbar
 
 environment:

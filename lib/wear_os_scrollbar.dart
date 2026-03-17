@@ -13,12 +13,16 @@ import 'wear_os_scrollbar_platform_interface.dart';
 enum WearOsHapticFeedback {
   /// Vibrate.
   vibrate,
+
   /// Light impact.
   lightImpact,
+
   /// Medium impact.
   mediumImpact,
+
   /// Heavy impact.
   heavyImpact,
+
   /// Selection click.
   selectionClick,
 }
