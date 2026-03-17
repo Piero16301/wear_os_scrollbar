@@ -1,3 +1,6 @@
+/// A custom scrollbar tailored for Wear OS applications.
+library;
+
 import 'dart:async';
 import 'dart:math';
 
@@ -6,15 +9,23 @@ import 'package:flutter/services.dart';
 
 import 'wear_os_scrollbar_platform_interface.dart';
 
+/// Specifies the type of haptic feedback to be played when scrolling.
 enum WearOsHapticFeedback {
+  /// Vibrate.
   vibrate,
+  /// Light impact.
   lightImpact,
+  /// Medium impact.
   mediumImpact,
+  /// Heavy impact.
   heavyImpact,
+  /// Selection click.
   selectionClick,
 }
 
+/// A scrollbar indicator specifically designed for circular screens like those found on Wear OS devices.
 class WearOsScrollbar extends StatefulWidget {
+  /// Creates a [WearOsScrollbar].
   const WearOsScrollbar({
     required this.controller,
     required this.child,
@@ -33,14 +44,31 @@ class WearOsScrollbar extends StatefulWidget {
         assert(strokeWidth >= 1 && strokeWidth <= 10,
             'strokeWidth must be between 1 and 10');
 
+  /// The scroll controller of the scrollable widget.
   final ScrollController controller;
+
+  /// The widget below this widget in the tree.
   final Widget child;
+
+  /// The threshold distance that triggers haptic feedback.
   final double hapticScrollThreshold;
+
+  /// The type of haptic feedback to occur during scrolling.
   final WearOsHapticFeedback hapticFeedback;
+
+  /// The color of the active scroll indicator.
   final Color indicatorColor;
+
+  /// The color of the scroll track background.
   final Color backgroundColor;
+
+  /// The width of the scrollbar stroke.
   final double strokeWidth;
+
+  /// The right margin of the scrollbar.
   final double marginRight;
+
+  /// The total angle in degrees that the scroll track occupies.
   final double totalAngle;
 
   @override

@@ -1,3 +1,6 @@
+/// The method channel implementation for wear_os_scrollbar.
+library;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -12,6 +15,7 @@ class MethodChannelWearOsScrollbar extends WearOsScrollbarPlatform {
   Stream<double>? _rotaryScrollEvents;
 
   @override
+  /// Stream of rotary scroll events from the native platform.
   Stream<double> get rotaryScrollEvents {
     _rotaryScrollEvents ??= eventChannel
         .receiveBroadcastStream()

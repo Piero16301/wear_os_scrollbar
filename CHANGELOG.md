@@ -1,3 +1,7 @@
+## 0.0.2
+
+* Added complete public API documentation for pub.dev compliance.
+
 ## 0.0.1
 
-* TODO: Describe initial release.
+* Initial release.

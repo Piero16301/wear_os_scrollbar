@@ -1,7 +1,11 @@
+/// The platform interface for wear_os_scrollbar.
+library;
+
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'wear_os_scrollbar_method_channel.dart';
 
+/// The common platform interface for [WearOsScrollbarPlatform].
 abstract class WearOsScrollbarPlatform extends PlatformInterface {
   /// Constructs a WearOsScrollbarPlatform.
   WearOsScrollbarPlatform() : super(token: _token);
