@@ -1,6 +1,6 @@
 ## 0.0.3
 
-* Added complete public API documentation for pub.dev compliance.
+* Fixed missing documentation for `MethodChannelWearOsScrollbar` constructor to achieve 100% pub.dev score.
 
 ## 0.0.2
 
