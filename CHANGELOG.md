@@ -1,3 +1,7 @@
+## 0.0.4
+
+* Updated documentation and added examples.
+
 ## 0.0.3
 
 * Fixed missing documentation for `MethodChannelWearOsScrollbar` constructor to achieve 100% pub.dev score.

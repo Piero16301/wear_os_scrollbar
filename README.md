@@ -1,6 +1,8 @@
 # WearOS Scrollbar
 
 [![pub package](https://img.shields.io/pub/v/wear_os_scrollbar.svg)](https://pub.dev/packages/wear_os_scrollbar)
+[![pub points](https://img.shields.io/pub/points/wear_os_scrollbar?color=2E8B57&label=pub%20points)](https://pub.dev/packages/wear_os_scrollbar/score)
+[![code factor](https://www.codefactor.io/repository/github/Piero16301/wear_os_scrollbar/badge)](https://www.codefactor.io/repository/github/Piero16301/wear_os_scrollbar)
 [![analysis](https://github.com/Piero16301/wear_os_scrollbar/actions/workflows/code-analysis.yml/badge.svg)](https://github.com/Piero16301/wear_os_scrollbar/actions)
 [![codecov](https://codecov.io/gh/Piero16301/wear_os_scrollbar/graph/badge.svg)](https://codecov.io/gh/Piero16301/wear_os_scrollbar)
 [![Star on Github](https://img.shields.io/github/stars/Piero16301/wear_os_scrollbar.svg?style=flat&logo=github&colorB=deeppink&label=stars)](https://github.com/Piero16301/wear_os_scrollbar)
