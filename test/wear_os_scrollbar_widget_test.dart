@@ -369,4 +369,70 @@ void main() {
       );
     });
   });
+
+  testWidgets(
+      'WearOsScrollbar does not show indicator when hideIndicator is true',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 200,
+            child: WearOsScrollbar(
+              controller: scrollController,
+              hideIndicator: true,
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: 100,
+                itemBuilder: (context, index) =>
+                    ListTile(title: Text('Item $index')),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    scrollController.jumpTo(50);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      find.descendant(
+        of: find.byType(AnimatedOpacity),
+        matching: find.byType(CustomPaint),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('WearOsScrollbar rotary scroll works when hideIndicator is true',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 200,
+            child: WearOsScrollbar(
+              controller: scrollController,
+              hideIndicator: true,
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: 100,
+                itemBuilder: (context, index) =>
+                    ListTile(title: Text('Item $index')),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(scrollController.offset, 0.0);
+
+    mockPlatform.emitScrollEvent(100.0);
+    await tester.pump();
+
+    expect(scrollController.offset, 100.0);
+  });
 }

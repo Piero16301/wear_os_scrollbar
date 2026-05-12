@@ -19,6 +19,7 @@ This package provides a customizable circular scrollbar that automatically respo
 * **Native Rotary Input:** Automatically listens to the physical rotary encoder (crown/bezel) of the watch and scrolls the content.
 * **Haptic Feedback:** Provides integrated configurable haptic feedback as you scroll.
 * **Highly Customizable:** Easily adjust colors, stroke width, margins, and the total angle covered by the indicator.
+* **Hide Indicator:** Option to hide the visual indicator while keeping rotary and haptic functionality.
 * **Auto-hiding:** Smoothly fades out when not actively scrolling.
 
 ## 📸 Example App
@@ -115,6 +116,26 @@ class _MyWearOsScreenState extends State<MyWearOsScreen> {
 }
 ```
 
+### 📱 Using with PageView
+
+`WearOsScrollbar` also works perfectly with `PageView`. If you want to use the rotary input to navigate between pages but prefer to show your own custom page indicator (like dots or a curved indicator), you can set `hideIndicator: true`.
+
+```dart
+WearOsScrollbar(
+  controller: _pageController,
+  hideIndicator: true, // Hides the default scrollbar but keeps rotary input working
+  child: PageView(
+    controller: _pageController,
+    scrollDirection: Axis.vertical, // Works best for vertical PageView on Wear OS
+    children: [
+      PageOne(),
+      PageTwo(),
+      PageThree(),
+    ],
+  ),
+)
+```
+
 ### Customization Options
 
 | Parameter | Type | Default | Description |
@@ -128,6 +149,7 @@ class _MyWearOsScreenState extends State<MyWearOsScreen> {
 | `strokeWidth` | `double` | `6.0` | Thickness of the scrollbar (must be between 1 and 10). |
 | `marginRight` | `double` | `0.0` | Distance from the physical edge of the screen (must be between 0 and 50). |
 | `totalAngle` | `double` | `30.0` | Total span angle of the scrollbar area (must be between 10 and 90 degrees). |
+| `hideIndicator` | `bool` | `false` | Whether to hide the visual scroll indicator while maintaining rotary and haptic support. |
 
 ## 📄 License
 Distributed under the MIT License. See LICENSE for more information.

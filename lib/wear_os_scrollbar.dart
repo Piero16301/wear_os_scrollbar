@@ -40,6 +40,7 @@ class WearOsScrollbar extends StatefulWidget {
     this.strokeWidth = 6.0,
     this.marginRight = 0.0,
     this.totalAngle = 30.0,
+    this.hideIndicator = false,
     super.key,
   })  : assert(totalAngle >= 10 && totalAngle <= 90,
             'totalAngle must be between 10 and 90 degrees'),
@@ -74,6 +75,9 @@ class WearOsScrollbar extends StatefulWidget {
 
   /// The total angle in degrees that the scroll track occupies.
   final double totalAngle;
+
+  /// Whether to hide the visual scroll indicator.
+  final bool hideIndicator;
 
   @override
   State<WearOsScrollbar> createState() => _WearOsScrollbarState();
@@ -181,6 +185,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar> {
   }
 
   void _showIndicator() {
+    if (widget.hideIndicator) return;
     if (!_isVisible) {
       setState(() {
         _isVisible = true;
@@ -203,7 +208,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar> {
     return Stack(
       children: [
         widget.child,
-        if (isScrollable)
+        if (isScrollable && !widget.hideIndicator)
           Positioned.fill(
             child: IgnorePointer(
               child: AnimatedOpacity(
