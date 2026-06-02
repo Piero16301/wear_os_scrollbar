@@ -1,3 +1,8 @@
+## 0.1.1
+
+* Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
+* Migrates to use the built-in Kotlin DSL for Android Gradle.
+
 ## 0.1.0
 
 * Added `hideIndicator` parameter to `WearOsScrollbar` to allow hiding the visual indicator while maintaining rotary input and haptic feedback.
