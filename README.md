@@ -150,6 +150,7 @@ WearOsScrollbar(
 | `marginRight` | `double` | `0.0` | Distance from the physical edge of the screen (must be between 0 and 50). |
 | `totalAngle` | `double` | `30.0` | Total span angle of the scrollbar area (must be between 10 and 90 degrees). |
 | `hideIndicator` | `bool` | `false` | Whether to hide the visual scroll indicator while maintaining rotary and haptic support. |
+| `indicatorGap` | `double?` | `strokeWidth / 2` | If provided, specifies the gap between the scroll indicator and the track. |
 
 ## 📄 License
 Distributed under the MIT License. See LICENSE for more information.

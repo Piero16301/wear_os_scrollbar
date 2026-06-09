@@ -368,6 +368,25 @@ void main() {
         throwsAssertionError,
       );
     });
+
+    test('indicatorGap must be between 0 and 20 if provided', () {
+      expect(
+        () => WearOsScrollbar(
+          controller: scrollController,
+          indicatorGap: -1,
+          child: Container(),
+        ),
+        throwsAssertionError,
+      );
+      expect(
+        () => WearOsScrollbar(
+          controller: scrollController,
+          indicatorGap: 21,
+          child: Container(),
+        ),
+        throwsAssertionError,
+      );
+    });
   });
 
   testWidgets(
