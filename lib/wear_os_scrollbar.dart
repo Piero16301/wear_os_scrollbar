@@ -107,6 +107,13 @@ class _WearOsScrollbarState extends State<WearOsScrollbar> {
 
     _rotarySubscription = WearOsScrollbarPlatform.instance.rotaryScrollEvents
         .listen((double event) {
+
+      // Ignore events unless this scrollbar's route is the current (topmost)
+      // one, so a covered screen doesn't scroll behind what's on top.
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route != null && !route.isCurrent) return;
+
       final scrollAmount = event;
       final newOffset = widget.controller.offset + scrollAmount;
 
