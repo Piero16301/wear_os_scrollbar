@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wear_os_scrollbar/wear_os_scrollbar.dart';
@@ -462,6 +463,70 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
   });
 
+  testWidgets(
+    'WearOsScrollbar applies indicatorGap between indicator and track',
+    (WidgetTester tester) async {
+      Future<void> pumpAtTop({double? indicatorGap}) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  height: 200,
+                  width: 200,
+                  child: WearOsScrollbar(
+                    controller: scrollController,
+                    indicatorGap: indicatorGap,
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: 100,
+                      itemBuilder: (context, index) =>
+                          ListTile(title: Text('Item $index')),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        scrollController.jumpTo(100);
+        await tester.pump();
+        scrollController.jumpTo(0);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
+      final indicatorPaint = find.descendant(
+        of: find.byType(AnimatedOpacity),
+        matching: find.byType(CustomPaint),
+      );
+
+      // 200x200 canvas with the default strokeWidth (6) gives a radius of 97.
+      // At the top of the list the indicator starts at the track start and is
+      // clamped to its minimum sweep, so the bottom track begins one gap later.
+      const radius = 97.0;
+      const sweepAngle = 30 * pi / 180;
+      const startAngle = -sweepAngle / 2;
+      const indicatorEndAngle = startAngle + sweepAngle * 0.15;
+
+      await pumpAtTop();
+      expect(
+        indicatorPaint,
+        paints
+          ..arc(startAngle: startAngle)
+          ..arc(startAngle: indicatorEndAngle + (6.0 + 3.0) / radius),
+      );
+
+      await pumpAtTop(indicatorGap: 1);
+      expect(
+        indicatorPaint,
+        paints
+          ..arc(startAngle: startAngle)
+          ..arc(startAngle: indicatorEndAngle + (6.0 + 1.0) / radius),
+      );
+    },
+  );
+
   testWidgets('WearOsScrollbar with empty list', (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -614,6 +679,25 @@ void main() {
         () => WearOsScrollbar(
           controller: scrollController,
           flingFactor: 2.5,
+          child: Container(),
+        ),
+        throwsAssertionError,
+      );
+    });
+
+    test('indicatorGap must be between 0 and 20 if provided', () {
+      expect(
+        () => WearOsScrollbar(
+          controller: scrollController,
+          indicatorGap: -1,
+          child: Container(),
+        ),
+        throwsAssertionError,
+      );
+      expect(
+        () => WearOsScrollbar(
+          controller: scrollController,
+          indicatorGap: 21,
           child: Container(),
         ),
         throwsAssertionError,
