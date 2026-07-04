@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 
 import 'wear_os_scrollbar_platform_interface.dart';
 
+export 'wear_os_expressive_item.dart';
+
 /// Specifies the type of haptic feedback to be played when scrolling.
 enum WearOsHapticFeedback {
   /// Vibrate.
@@ -42,12 +44,18 @@ class WearOsScrollbar extends StatefulWidget {
     this.totalAngle = 30.0,
     this.hideIndicator = false,
     super.key,
-  })  : assert(totalAngle >= 10 && totalAngle <= 90,
-            'totalAngle must be between 10 and 90 degrees'),
-        assert(marginRight >= 0 && marginRight <= 50,
-            'marginRight must be between 0 and 50'),
-        assert(strokeWidth >= 1 && strokeWidth <= 10,
-            'strokeWidth must be between 1 and 10');
+  }) : assert(
+         totalAngle >= 10 && totalAngle <= 90,
+         'totalAngle must be between 10 and 90 degrees',
+       ),
+       assert(
+         marginRight >= 0 && marginRight <= 50,
+         'marginRight must be between 0 and 50',
+       ),
+       assert(
+         strokeWidth >= 1 && strokeWidth <= 10,
+         'strokeWidth must be between 1 and 10',
+       );
 
   /// The scroll controller of the scrollable widget.
   final ScrollController controller;
@@ -107,23 +115,27 @@ class _WearOsScrollbarState extends State<WearOsScrollbar> {
 
     _rotarySubscription = WearOsScrollbarPlatform.instance.rotaryScrollEvents
         .listen((double event) {
-      final scrollAmount = event;
-      final newOffset = widget.controller.offset + scrollAmount;
+          final scrollAmount = event;
+          final newOffset = widget.controller.offset + scrollAmount;
 
-      final maxScrollExtent = widget.controller.position.maxScrollExtent;
-      final minScrollExtent = widget.controller.position.minScrollExtent;
-      final clampedOffset = newOffset.clamp(minScrollExtent, maxScrollExtent);
+          final maxScrollExtent = widget.controller.position.maxScrollExtent;
+          final minScrollExtent = widget.controller.position.minScrollExtent;
+          final clampedOffset = newOffset.clamp(
+            minScrollExtent,
+            maxScrollExtent,
+          );
 
-      if (clampedOffset != widget.controller.offset) {
-        widget.controller.jumpTo(clampedOffset);
+          if (clampedOffset != widget.controller.offset) {
+            widget.controller.jumpTo(clampedOffset);
 
-        _accumulatedHapticScroll += scrollAmount;
-        if (_accumulatedHapticScroll.abs() >= widget.hapticScrollThreshold) {
-          _performHapticFeedback();
-          _accumulatedHapticScroll = 0.0;
-        }
-      }
-    });
+            _accumulatedHapticScroll += scrollAmount;
+            if (_accumulatedHapticScroll.abs() >=
+                widget.hapticScrollThreshold) {
+              _performHapticFeedback();
+              _accumulatedHapticScroll = 0.0;
+            }
+          }
+        });
   }
 
   void _performHapticFeedback() {
@@ -258,8 +270,10 @@ class _CircularScrollIndicatorPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = max(0.0,
-        min(size.width / 2, size.height / 2) - strokeWidth / 2 - marginRight);
+    final radius = max(
+      0.0,
+      min(size.width / 2, size.height / 2) - strokeWidth / 2 - marginRight,
+    );
 
     final backgroundPaint = Paint()
       ..color = backgroundColor
@@ -282,8 +296,10 @@ class _CircularScrollIndicatorPainter extends CustomPainter {
     var indicatorSweepAngle =
         sweepAngle * (viewportDimension / totalContentDimension);
 
-    indicatorSweepAngle =
-        indicatorSweepAngle.clamp(sweepAngle * 0.15, sweepAngle);
+    indicatorSweepAngle = indicatorSweepAngle.clamp(
+      sweepAngle * 0.15,
+      sweepAngle,
+    );
 
     final scrollRatio = maxScrollExtent > 0
         ? (scrollPosition / maxScrollExtent).clamp(0.0, 1.0)

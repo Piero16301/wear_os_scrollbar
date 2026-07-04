@@ -21,10 +21,10 @@ void main() {
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .handlePlatformMessage(
-      channel.name,
-      const StandardMethodCodec().encodeSuccessEnvelope(42.0),
-      (data) {},
-    );
+          channel.name,
+          const StandardMethodCodec().encodeSuccessEnvelope(42.0),
+          (data) {},
+        );
 
     await Future.delayed(Duration.zero);
     expect(events, [42.0]);

@@ -29,11 +29,15 @@ void main() {
     expect(initialPlatform, isInstanceOf<MethodChannelWearOsScrollbar>());
   });
 
-  test('Default implementation of rotaryScrollEvents throws UnimplementedError',
-      () {
-    expect(() => ExtendsWearOsScrollbarPlatform().rotaryScrollEvents,
-        throwsUnimplementedError);
-  });
+  test(
+    'Default implementation of rotaryScrollEvents throws UnimplementedError',
+    () {
+      expect(
+        () => ExtendsWearOsScrollbarPlatform().rotaryScrollEvents,
+        throwsUnimplementedError,
+      );
+    },
+  );
 
   test('Mock platform interface streaming', () async {
     MockWearOsScrollbarPlatform fakePlatform = MockWearOsScrollbarPlatform();

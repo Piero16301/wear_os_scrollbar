@@ -40,25 +40,29 @@ class _MyAppState extends State<MyApp> {
                 controller: _controller,
                 itemCount: 20,
                 itemBuilder: (context, index) {
-                  return ListTile(
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    title: Text(
-                      'Item ${index + 1}',
-                      textAlign: TextAlign.center,
-                    ),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Tapped on Item ${index + 1}',
-                            textAlign: TextAlign.center,
+                  return WearOsExpressiveItem(
+                    scrollController: _controller,
+                    child: ListTile(
+                      tileColor: Colors.red,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                      title: Text(
+                        'Item ${index + 1}',
+                        textAlign: TextAlign.center,
+                      ),
+                      onTap: () {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Tapped on Item ${index + 1}',
+                              textAlign: TextAlign.center,
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   );
                 },
               ),

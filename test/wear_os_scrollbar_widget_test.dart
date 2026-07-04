@@ -48,8 +48,9 @@ void main() {
     expect(find.text('Test Child'), findsOneWidget);
   });
 
-  testWidgets('WearOsScrollbar shows indicator on scroll',
-      (WidgetTester tester) async {
+  testWidgets('WearOsScrollbar shows indicator on scroll', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -84,8 +85,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 2000));
   });
 
-  testWidgets('WearOsScrollbar responds to rotary scroll',
-      (WidgetTester tester) async {
+  testWidgets('WearOsScrollbar responds to rotary scroll', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -113,8 +115,9 @@ void main() {
     expect(scrollController.offset, 100.0);
   });
 
-  testWidgets('WearOsScrollbar haptic feedback types',
-      (WidgetTester tester) async {
+  testWidgets('WearOsScrollbar haptic feedback types', (
+    WidgetTester tester,
+  ) async {
     for (final feedback in WearOsHapticFeedback.values) {
       await tester.pumpWidget(
         MaterialApp(
@@ -143,8 +146,9 @@ void main() {
     }
   });
 
-  testWidgets('WearOsScrollbar updates when controller changes',
-      (WidgetTester tester) async {
+  testWidgets('WearOsScrollbar updates when controller changes', (
+    WidgetTester tester,
+  ) async {
     final controller2 = ScrollController();
     await tester.pumpWidget(
       MaterialApp(
@@ -160,10 +164,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: WearOsScrollbar(
-            controller: controller2,
-            child: Container(),
-          ),
+          body: WearOsScrollbar(controller: controller2, child: Container()),
         ),
       ),
     );
@@ -171,8 +172,9 @@ void main() {
     controller2.dispose();
   });
 
-  testWidgets('WearOsScrollbar same controller update',
-      (WidgetTester tester) async {
+  testWidgets('WearOsScrollbar same controller update', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -209,12 +211,14 @@ void main() {
       ),
     );
 
-    await tester
-        .pumpWidget(const MaterialApp(home: Scaffold(body: SizedBox())));
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: SizedBox())),
+    );
   });
 
-  testWidgets('WearOsScrollbar paints tracks when scrolled',
-      (WidgetTester tester) async {
+  testWidgets('WearOsScrollbar paints tracks when scrolled', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -258,10 +262,7 @@ void main() {
         home: Scaffold(
           body: WearOsScrollbar(
             controller: scrollController,
-            child: ListView(
-              controller: scrollController,
-              children: const [],
-            ),
+            child: ListView(controller: scrollController, children: const []),
           ),
         ),
       ),
@@ -276,8 +277,9 @@ void main() {
     );
   });
 
-  testWidgets('WearOsScrollbar with large margin (radius <= 0)',
-      (WidgetTester tester) async {
+  testWidgets('WearOsScrollbar with large margin (radius <= 0)', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -371,68 +373,71 @@ void main() {
   });
 
   testWidgets(
-      'WearOsScrollbar does not show indicator when hideIndicator is true',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            height: 200,
-            child: WearOsScrollbar(
-              controller: scrollController,
-              hideIndicator: true,
-              child: ListView.builder(
+    'WearOsScrollbar does not show indicator when hideIndicator is true',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 200,
+              child: WearOsScrollbar(
                 controller: scrollController,
-                itemCount: 100,
-                itemBuilder: (context, index) =>
-                    ListTile(title: Text('Item $index')),
+                hideIndicator: true,
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: 100,
+                  itemBuilder: (context, index) =>
+                      ListTile(title: Text('Item $index')),
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    scrollController.jumpTo(50);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
+      scrollController.jumpTo(50);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
-    expect(
-      find.descendant(
-        of: find.byType(AnimatedOpacity),
-        matching: find.byType(CustomPaint),
-      ),
-      findsNothing,
-    );
-  });
+      expect(
+        find.descendant(
+          of: find.byType(AnimatedOpacity),
+          matching: find.byType(CustomPaint),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
-  testWidgets('WearOsScrollbar rotary scroll works when hideIndicator is true',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            height: 200,
-            child: WearOsScrollbar(
-              controller: scrollController,
-              hideIndicator: true,
-              child: ListView.builder(
+  testWidgets(
+    'WearOsScrollbar rotary scroll works when hideIndicator is true',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 200,
+              child: WearOsScrollbar(
                 controller: scrollController,
-                itemCount: 100,
-                itemBuilder: (context, index) =>
-                    ListTile(title: Text('Item $index')),
+                hideIndicator: true,
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: 100,
+                  itemBuilder: (context, index) =>
+                      ListTile(title: Text('Item $index')),
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    expect(scrollController.offset, 0.0);
+      expect(scrollController.offset, 0.0);
 
-    mockPlatform.emitScrollEvent(100.0);
-    await tester.pump();
+      mockPlatform.emitScrollEvent(100.0);
+      await tester.pump();
 
-    expect(scrollController.offset, 100.0);
-  });
+      expect(scrollController.offset, 100.0);
+    },
+  );
 }

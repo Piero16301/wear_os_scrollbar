@@ -1,3 +1,10 @@
+## 0.2.0
+
+* **New Feature:** Added `WearOsExpressiveItem` widget to support Material 3 Expressive scrolling aesthetics (dynamic fisheye scaling effect based on scroll position).
+* Exported the new widget from the main library to make it publicly accessible.
+* Added comprehensive unit and widget tests for the new feature, maintaining 100% test coverage across the package.
+* Updated example application to demonstrate `WearOsExpressiveItem` usage with a list of tiles.
+
 ## 0.1.1
 
 * Updates minimum supported SDK version to Flutter 3.44/Dart 3.12.
