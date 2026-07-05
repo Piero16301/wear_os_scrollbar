@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wear_os_scrollbar/wear_os_scrollbar.dart';
+import 'package:wear_os_scrollbar_example/widgets/card_action.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,6 +29,12 @@ class _MyAppState extends State<MyApp> {
         useMaterial3: true,
         brightness: Brightness.dark,
         scaffoldBackgroundColor: Colors.black,
+        cardTheme: CardThemeData(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          margin: EdgeInsets.zero,
+        ),
       ),
       home: Scaffold(
         body: SizedBox.expand(
@@ -42,26 +49,23 @@ class _MyAppState extends State<MyApp> {
                 itemBuilder: (context, index) {
                   return WearOsExpressiveItem(
                     scrollController: _controller,
-                    child: ListTile(
-                      tileColor: Colors.red,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12)),
-                      ),
-                      title: Text(
-                        'Item ${index + 1}',
-                        textAlign: TextAlign.center,
-                      ),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Tapped on Item ${index + 1}',
-                              textAlign: TextAlign.center,
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(vertical: 2),
+                      child: CardAction(
+                        content: Text('Item ${index + 1}'),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Tapped on Item ${index + 1}',
+                                textAlign: TextAlign.center,
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   );
                 },

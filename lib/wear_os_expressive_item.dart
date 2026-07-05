@@ -80,8 +80,15 @@ class _WearOsExpressiveItemState extends State<WearOsExpressiveItem> {
               1.0,
             );
 
-            // Interpolate scale based on the normalized distance.
-            final curvedDistance = Curves.easeIn.transform(normalizedDistance);
+            // The central 50% of the viewport is a flat zone where scale stays
+            // at maxScale. Scaling only occurs in the outer 25% at each edge.
+            // Remap normalizedDistance: [0.0, 0.5] → 0.0, [0.5, 1.0] → [0.0, 1.0].
+            final edgeDistance = normalizedDistance <= 0.5
+                ? 0.0
+                : (normalizedDistance - 0.5) / 0.5;
+
+            // Interpolate scale based on the remapped edge distance.
+            final curvedDistance = Curves.easeIn.transform(edgeDistance);
 
             scale =
                 widget.maxScale -
@@ -89,10 +96,13 @@ class _WearOsExpressiveItemState extends State<WearOsExpressiveItem> {
           }
         }
 
-        return Transform.scale(
-          scale: scale,
-          alignment: Alignment.center,
-          child: child,
+        return Align(
+          heightFactor: scale,
+          child: Transform.scale(
+            scale: scale,
+            alignment: Alignment.center,
+            child: child,
+          ),
         );
       },
       child: widget.child,

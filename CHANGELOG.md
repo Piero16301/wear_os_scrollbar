@@ -1,3 +1,8 @@
+## 0.2.1
+
+* **Fix:** `WearOsExpressiveItem` now wraps the scaled widget in an `Align` with `heightFactor` equal to the current scale, so the layout space shrinks proportionally to the visual size and the gap between list items remains consistent regardless of their position in the viewport.
+* **Improvement:** Scale reduction in `WearOsExpressiveItem` is now limited to the outer 25% at the top and bottom of the viewport. The central 50% always displays items at `maxScale`, and the easing curve is only applied within the edge zones.
+
 ## 0.2.0
 
 * **New Feature:** Added `WearOsExpressiveItem` widget to support Material 3 Expressive scrolling aesthetics (dynamic fisheye scaling effect based on scroll position).
