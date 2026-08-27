@@ -9,10 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   wear_os_scrollbar:
     path: ../
   cupertino_icons: ^1.0.9
+  material_ui: ^1.1.0
 
 dev_dependencies:
   integration_test:

@@ -1,3 +1,7 @@
+## 0.2.2
+
+* **Fix:** Migrates `WearOsExpressiveItem` and `WearOsScrollbar` from deprecated `material` widgets to new `material_ui` package, ensuring compatibility with the latest Flutter Wear OS SDK (3.47+).
+
 ## 0.2.1
 
 * **Fix:** `WearOsExpressiveItem` now wraps the scaled widget in an `Align` with `heightFactor` equal to the current scale, so the layout space shrinks proportionally to the visual size and the gap between list items remains consistent regardless of their position in the viewport.

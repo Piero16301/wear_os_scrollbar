@@ -4,7 +4,7 @@ library;
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import 'wear_os_scrollbar_platform_interface.dart';
