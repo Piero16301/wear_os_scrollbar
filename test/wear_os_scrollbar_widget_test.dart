@@ -160,9 +160,104 @@ void main() {
     await tester.pump();
 
     expect(scrollController.offset, 100.0);
+
+    // Hit top boundary in instant mode to trigger boundary limit branch
+    scrollController.jumpTo(0.0);
+    mockPlatform.emitScrollEvent(-50.0);
+    await tester.pump();
   });
 
-  testWidgets('WearOsScrollbar triggers limit haptic at boundary', (
+  testWidgets('WearOsScrollbar triggers limit haptic with rotary feedback', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 200,
+            child: WearOsScrollbar(
+              controller: scrollController,
+              hapticFeedback: WearOsHapticFeedback.rotaryTick,
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: 100,
+                itemBuilder: (context, index) =>
+                    ListTile(title: Text('Item $index')),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Scroll up when already at 0.0 with rotaryTick
+    mockPlatform.emitScrollEvent(-50.0);
+    await tester.pump();
+
+    expect(mockPlatform.hapticCalls, contains(WearOsRotaryHapticType.limit));
+  });
+
+  testWidgets(
+    'WearOsScrollbar triggers limit haptic with non-rotary feedback',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 200,
+              child: WearOsScrollbar(
+                controller: scrollController,
+                hapticFeedback: WearOsHapticFeedback.lightImpact,
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: 100,
+                  itemBuilder: (context, index) =>
+                      ListTile(title: Text('Item $index')),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      mockPlatform.emitScrollEvent(-50.0);
+      await tester.pump();
+    },
+  );
+
+  testWidgets(
+    'WearOsScrollbar stops ticker on touch drag scroll notification',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 200,
+              child: WearOsScrollbar(
+                controller: scrollController,
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: 100,
+                  itemBuilder: (context, index) =>
+                      ListTile(title: Text('Item $index')),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Start rotary scroll to activate ticker
+      mockPlatform.emitScrollEvent(100.0);
+      await tester.pump();
+
+      // Perform a touch drag
+      await tester.drag(find.byType(ListView), const Offset(0, -30));
+      await tester.pump();
+    },
+  );
+
+  testWidgets('WearOsScrollbar ticker stops when controller loses clients', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -184,11 +279,27 @@ void main() {
       ),
     );
 
-    // Scroll up when already at 0.0
-    mockPlatform.emitScrollEvent(-50.0);
-    await tester.pump();
+    // Start rotary scroll
+    mockPlatform.emitScrollEvent(100.0);
+    await tester.pump(); // ticker starts
 
-    expect(mockPlatform.hapticCalls, contains(WearOsRotaryHapticType.limit));
+    // Replace child with a widget that doesn't use scrollController
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 200,
+            child: WearOsScrollbar(
+              controller: scrollController,
+              child: Container(),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Pump frame so ticker fires _onTick while scrollController.hasClients is false
+    await tester.pump(const Duration(milliseconds: 16));
   });
 
   testWidgets('WearOsScrollbar haptic feedback types', (
@@ -353,6 +464,11 @@ void main() {
       ),
       findsNothing,
     );
+
+    // Emitting rotary event when maxScroll <= minScroll triggers limit haptic
+    mockPlatform.emitScrollEvent(20.0);
+    await tester.pump();
+    expect(mockPlatform.hapticCalls, contains(WearOsRotaryHapticType.limit));
   });
 
   testWidgets('WearOsScrollbar with large margin (radius <= 0)', (

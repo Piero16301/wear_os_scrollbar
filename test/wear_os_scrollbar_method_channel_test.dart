@@ -52,4 +52,17 @@ void main() {
       expect(log[1].arguments, {'type': 'limit'});
     },
   );
+
+  test('performRotaryHaptic handles PlatformException gracefully', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(platform.methodChannel, (call) async {
+          throw PlatformException(
+            code: 'UNAVAILABLE',
+            message: 'Haptics not available',
+          );
+        });
+
+    // Should catch PlatformException and print error without throwing
+    await platform.performRotaryHaptic(type: WearOsRotaryHapticType.tick);
+  });
 }

@@ -262,8 +262,6 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
   }
 
   void _checkHaptic(double delta) {
-    if (widget.hapticFeedback == WearOsHapticFeedback.none) return;
-
     _accumulatedHapticScroll += delta;
     if (_accumulatedHapticScroll >= widget.hapticScrollThreshold) {
       _accumulatedHapticScroll = 0.0;
