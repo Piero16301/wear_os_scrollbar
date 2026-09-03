@@ -10,9 +10,17 @@ class MockWearOsScrollbarPlatform
     implements WearOsScrollbarPlatform {
   final StreamController<double> _controller =
       StreamController<double>.broadcast();
+  final List<WearOsRotaryHapticType> hapticCalls = [];
 
   @override
   Stream<double> get rotaryScrollEvents => _controller.stream;
+
+  @override
+  Future<void> performRotaryHaptic({
+    WearOsRotaryHapticType type = WearOsRotaryHapticType.tick,
+  }) async {
+    hapticCalls.add(type);
+  }
 
   void emitScrollEvent(double delta) {
     _controller.add(delta);
@@ -39,6 +47,16 @@ void main() {
     },
   );
 
+  test(
+    'Default implementation of performRotaryHaptic throws UnimplementedError',
+    () {
+      expect(
+        () => ExtendsWearOsScrollbarPlatform().performRotaryHaptic(),
+        throwsUnimplementedError,
+      );
+    },
+  );
+
   test('Mock platform interface streaming', () async {
     MockWearOsScrollbarPlatform fakePlatform = MockWearOsScrollbarPlatform();
     WearOsScrollbarPlatform.instance = fakePlatform;
@@ -54,5 +72,18 @@ void main() {
     await Future.delayed(Duration.zero);
     expect(events, [10.0, -5.0]);
     await subscription.cancel();
+  });
+
+  test('Mock platform interface performRotaryHaptic', () async {
+    MockWearOsScrollbarPlatform fakePlatform = MockWearOsScrollbarPlatform();
+    WearOsScrollbarPlatform.instance = fakePlatform;
+
+    await fakePlatform.performRotaryHaptic(type: WearOsRotaryHapticType.tick);
+    await fakePlatform.performRotaryHaptic(type: WearOsRotaryHapticType.limit);
+
+    expect(fakePlatform.hapticCalls, [
+      WearOsRotaryHapticType.tick,
+      WearOsRotaryHapticType.limit,
+    ]);
   });
 }

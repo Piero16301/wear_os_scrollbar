@@ -10,9 +10,17 @@ class MockWearOsScrollbarPlatform
     implements WearOsScrollbarPlatform {
   final StreamController<double> _controller =
       StreamController<double>.broadcast();
+  final List<WearOsRotaryHapticType> hapticCalls = [];
 
   @override
   Stream<double> get rotaryScrollEvents => _controller.stream;
+
+  @override
+  Future<void> performRotaryHaptic({
+    WearOsRotaryHapticType type = WearOsRotaryHapticType.tick,
+  }) async {
+    hapticCalls.add(type);
+  }
 
   void emitScrollEvent(double delta) {
     _controller.add(delta);
@@ -85,7 +93,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 2000));
   });
 
-  testWidgets('WearOsScrollbar responds to rotary scroll', (
+  testWidgets('WearOsScrollbar responds to rotary scroll with smooth decay', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -111,8 +119,76 @@ void main() {
 
     mockPlatform.emitScrollEvent(100.0);
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(scrollController.offset, greaterThan(0.0));
+
+    await tester.pumpAndSettle();
+    expect(
+      scrollController.offset,
+      40.0,
+    ); // 100.0 * 0.4 default rotarySensitivity
+    expect(mockPlatform.hapticCalls, contains(WearOsRotaryHapticType.tick));
+  });
+
+  testWidgets('WearOsScrollbar responds to rotary scroll with instant mode', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 200,
+            child: WearOsScrollbar(
+              controller: scrollController,
+              enableSmoothScroll: false,
+              rotarySensitivity: 1.0,
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: 100,
+                itemBuilder: (context, index) =>
+                    ListTile(title: Text('Item $index')),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(scrollController.offset, 0.0);
+
+    mockPlatform.emitScrollEvent(100.0);
+    await tester.pump();
 
     expect(scrollController.offset, 100.0);
+  });
+
+  testWidgets('WearOsScrollbar triggers limit haptic at boundary', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 200,
+            child: WearOsScrollbar(
+              controller: scrollController,
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: 100,
+                itemBuilder: (context, index) =>
+                    ListTile(title: Text('Item $index')),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Scroll up when already at 0.0
+    mockPlatform.emitScrollEvent(-50.0);
+    await tester.pump();
+
+    expect(mockPlatform.hapticCalls, contains(WearOsRotaryHapticType.limit));
   });
 
   testWidgets('WearOsScrollbar haptic feedback types', (
@@ -128,7 +204,9 @@ void main() {
               child: WearOsScrollbar(
                 controller: scrollController,
                 hapticFeedback: feedback,
-                hapticScrollThreshold: 10,
+                hapticScrollThreshold: 5,
+                enableSmoothScroll: false,
+                rotarySensitivity: 1.0,
                 child: ListView.builder(
                   controller: scrollController,
                   itemCount: 100,
@@ -370,6 +448,25 @@ void main() {
         throwsAssertionError,
       );
     });
+
+    test('rotarySensitivity must be between 0 and 2.0', () {
+      expect(
+        () => WearOsScrollbar(
+          controller: scrollController,
+          rotarySensitivity: 0,
+          child: Container(),
+        ),
+        throwsAssertionError,
+      );
+      expect(
+        () => WearOsScrollbar(
+          controller: scrollController,
+          rotarySensitivity: 2.5,
+          child: Container(),
+        ),
+        throwsAssertionError,
+      );
+    });
   });
 
   testWidgets(
@@ -420,6 +517,8 @@ void main() {
               child: WearOsScrollbar(
                 controller: scrollController,
                 hideIndicator: true,
+                enableSmoothScroll: false,
+                rotarySensitivity: 1.0,
                 child: ListView.builder(
                   controller: scrollController,
                   itemCount: 100,

@@ -1,3 +1,20 @@
+## 1.0.0
+
+* **New Feature - Native Wear OS Rotary Haptics:**
+  * Implemented native rotary crown tactile feedback using official Android Wear OS constants (`HapticFeedbackConstants.ROTARY_SCROLL_TICK` for crown notches and `HapticFeedbackConstants.ROTARY_SCROLL_LIMIT` for list bounds).
+  * Added `WearOsHapticFeedback.rotaryTick` as the default feedback mode, producing crisp, subtle mechanical clicks on Pixel Watch 3 and modern Wear OS devices instead of harsh phone motor vibrations.
+  * Added `WearOsHapticFeedback.none` to allow disabling haptic feedback.
+  * Added `enableLimitHaptic` option (defaults to `true`) to provide tactile boundary bump feedback when reaching the top or bottom extent of the scrollable list.
+  * Added `WearOsRotaryHapticType` and `performRotaryHaptic()` across the platform interface and native method channel.
+* **Improvement - Smooth Continuous Rotary Scrolling & Natural Decay Physics:**
+  * Replaced abrupt instantaneous scroll jumps (`jumpTo`) with a continuous exponential decay ticker (`enableSmoothScroll = true`), providing fluid scrolling and natural deceleration matching native Wear OS settings.
+  * Added `rotarySensitivity` parameter (defaults to `0.4`), calibrating crown scroll velocity from raw 64–128px jumps down to a comfortable, native ~24px per notch.
+  * Added touch gesture interruption: smoothly stops active rotary animations whenever the user touches the screen to perform a manual drag.
+* **Compatibility:**
+  * Updated dependency `material_ui` to `^1.1.1`.
+* **Testing:**
+  * Added tests covering native rotary haptics, boundary limit haptics, smooth decay physics, method channel calls, and assertions.
+
 ## 0.2.2
 
 * **Fix:** Migrates `WearOsExpressiveItem` and `WearOsScrollbar` from deprecated `material` widgets to new `material_ui` package, ensuring compatibility with the latest Flutter Wear OS SDK (3.47+).

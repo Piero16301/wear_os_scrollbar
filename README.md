@@ -15,10 +15,11 @@ This package provides a customizable circular scrollbar that automatically respo
 
 ## ✨ Features
 
-* **Material 3 Expressive Design:** Modern, sleek circular scrollbar tailored specifically for round screens.
-* **Native Rotary Input:** Automatically listens to the physical rotary encoder (crown/bezel) of the watch and scrolls the content.
-* **Haptic Feedback:** Provides integrated configurable haptic feedback as you scroll.
-* **Highly Customizable:** Easily adjust colors, stroke width, margins, and the total angle covered by the indicator.
+* **Material 3 Expressive Design:** Modern, sleek circular scrollbar tailored specifically for round screens, with support for the dynamic fisheye scaling effect via `WearOsExpressiveItem`.
+* **Smooth Rotary Input & Natural Decay:** Automatically listens to the watch's physical rotary encoder (crown/bezel) and scrolls with continuous exponential decay physics matching Wear OS system settings.
+* **Native Wear OS Rotary Haptics:** Official Android `ROTARY_SCROLL_TICK` crown detents and `ROTARY_SCROLL_LIMIT` boundary clicks for Pixel Watch 3 and modern Wear OS devices.
+* **Touch Interruption:** Fluidly cancels active rotary deceleration whenever the user touches the screen to perform a manual drag.
+* **Highly Customizable:** Easily configure scroll velocity (`rotarySensitivity`), smooth scrolling, colors, stroke width, margins, and span angle.
 * **Hide Indicator:** Option to hide the visual indicator while keeping rotary and haptic functionality.
 * **Auto-hiding:** Smoothly fades out when not actively scrolling.
 
@@ -34,7 +35,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  wear_os_scrollbar: ^0.0.3
+  wear_os_scrollbar: ^1.0.0
 ```
 
 ## ⚙️ Configuration
@@ -65,12 +66,12 @@ class MainActivity : FlutterActivity() {
 
 ## 🚀 Usage
 
-Wrap your scrollable content (like a `ListView` or `SingleChildScrollView`) with the `WearOsScrollbar` widget. 
+Wrap your scrollable content (like a `ListView` or `SingleChildScrollView`) with the `WearOsScrollbar` widget. You can also wrap individual items in `WearOsExpressiveItem` for Material 3 Expressive scaling.
 
 **Important:** You must provide the exact same `ScrollController` to both the `WearOsScrollbar` and your scrollable child.
 
 ```dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:wear_os_scrollbar/wear_os_scrollbar.dart';
 
 class MyWearOsScreen extends StatefulWidget {
@@ -95,18 +96,20 @@ class _MyWearOsScreenState extends State<MyWearOsScreen> {
       backgroundColor: Colors.black,
       body: WearOsScrollbar(
         controller: _controller,
-        // Optional customizations:
-        hapticFeedback: WearOsHapticFeedback.lightImpact,
-        indicatorColor: Colors.white,
-        backgroundColor: Colors.white30,
-        strokeWidth: 6.0,
-        totalAngle: 30.0,
+        // Optional customizations (default values calibrated for native Wear OS):
+        hapticFeedback: WearOsHapticFeedback.rotaryTick,
+        rotarySensitivity: 0.4,
+        enableSmoothScroll: true,
+        enableLimitHaptic: true,
         child: ListView.builder(
           controller: _controller, // MUST be the same controller
           itemCount: 50,
           itemBuilder: (context, index) {
-            return ListTile(
-              title: Text('Item $index'),
+            return WearOsExpressiveItem(
+              scrollController: _controller,
+              child: ListTile(
+                title: Text('Item $index'),
+              ),
             );
           },
         ),
@@ -136,20 +139,32 @@ WearOsScrollbar(
 )
 ```
 
-### Customization Options
+### WearOsScrollbar Options
 
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `controller` | `ScrollController` | **Required** | The controller attached to the scrollable widget inside. |
 | `child` | `Widget` | **Required** | The scrollable content (e.g., `ListView`). |
-| `hapticScrollThreshold` | `double` | `30.0` | How much rotary scrolling must accumulate before triggering a haptic click. |
-| `hapticFeedback` | `WearOsHapticFeedback` | `.selectionClick` | The type of vibration to trigger (`vibrate`, `lightImpact`, `mediumImpact`, `heavyImpact`, `selectionClick`). |
+| `hapticScrollThreshold` | `double` | `24.0` | How much rotary scrolling must accumulate before triggering a haptic click. |
+| `hapticFeedback` | `WearOsHapticFeedback` | `.rotaryTick` | The type of haptic feedback (`rotaryTick`, `vibrate`, `lightImpact`, `mediumImpact`, `heavyImpact`, `selectionClick`, `none`). |
+| `enableLimitHaptic` | `bool` | `true` | Whether to trigger tactile limit feedback (`ROTARY_SCROLL_LIMIT`) when hitting the top or bottom of the list. |
+| `rotarySensitivity` | `double` | `0.4` | Sensitivity multiplier for rotary encoder events (calibrated to match native Wear OS / Pixel Watch settings). |
+| `enableSmoothScroll` | `bool` | `true` | Whether to interpolate rotary scrolling with natural decay physics instead of jumping abruptly. |
 | `indicatorColor` | `Color` | `Colors.white` | Color of the active scroll indicator. |
 | `backgroundColor` | `Color` | `Colors.white30` | Color of the background track arc. |
 | `strokeWidth` | `double` | `6.0` | Thickness of the scrollbar (must be between 1 and 10). |
 | `marginRight` | `double` | `0.0` | Distance from the physical edge of the screen (must be between 0 and 50). |
 | `totalAngle` | `double` | `30.0` | Total span angle of the scrollbar area (must be between 10 and 90 degrees). |
 | `hideIndicator` | `bool` | `false` | Whether to hide the visual scroll indicator while maintaining rotary and haptic support. |
+
+### WearOsExpressiveItem Options
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `scrollController` | `ScrollController` | **Required** | The controller of the parent scrollable widget. |
+| `child` | `Widget` | **Required** | The child widget to be dynamically scaled. |
+| `minScale` | `double` | `0.5` | Minimum scale factor when the item reaches the top or bottom edges of the viewport. |
+| `maxScale` | `double` | `1.0` | Maximum scale factor when the item is within the central area of the viewport. |
 
 ## 📄 License
 Distributed under the MIT License. See LICENSE for more information.

@@ -40,7 +40,7 @@ class _MyAppState extends State<MyApp> {
         body: SizedBox.expand(
           child: WearOsScrollbar(
             controller: _controller,
-            hapticFeedback: WearOsHapticFeedback.lightImpact,
+            hapticFeedback: WearOsHapticFeedback.rotaryTick,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ListView.builder(

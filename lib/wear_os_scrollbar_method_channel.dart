@@ -15,14 +15,31 @@ class MethodChannelWearOsScrollbar extends WearOsScrollbarPlatform {
   @visibleForTesting
   final eventChannel = const EventChannel('wear_os_scrollbar/rotary');
 
+  /// The Method channel used to interact with the native platform.
+  @visibleForTesting
+  final methodChannel = const MethodChannel('wear_os_scrollbar/methods');
+
   Stream<double>? _rotaryScrollEvents;
 
   @override
   /// Stream of rotary scroll events from the native platform.
   Stream<double> get rotaryScrollEvents {
     _rotaryScrollEvents ??= eventChannel.receiveBroadcastStream().map(
-      (dynamic event) => event as double,
+      (dynamic event) => (event as num).toDouble(),
     );
     return _rotaryScrollEvents!;
+  }
+
+  @override
+  Future<void> performRotaryHaptic({
+    WearOsRotaryHapticType type = WearOsRotaryHapticType.tick,
+  }) async {
+    try {
+      await methodChannel.invokeMethod<void>('performHapticFeedback', {
+        'type': type.name,
+      });
+    } on PlatformException catch (e) {
+      debugPrint('Error performing rotary haptic feedback: $e');
+    }
   }
 }

@@ -5,6 +5,18 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'wear_os_scrollbar_method_channel.dart';
 
+/// The native rotary haptic feedback types supported by Wear OS.
+enum WearOsRotaryHapticType {
+  /// Standard subtle crown scroll tick (corresponds to ROTARY_SCROLL_TICK).
+  tick,
+
+  /// Limit reached tactile indicator (corresponds to ROTARY_SCROLL_LIMIT).
+  limit,
+
+  /// Axis tick tactile indicator (corresponds to ROTARY_SCROLL_AXIS_TICK).
+  axisTick,
+}
+
 /// The common platform interface for [WearOsScrollbarPlatform].
 abstract class WearOsScrollbarPlatform extends PlatformInterface {
   /// Constructs a WearOsScrollbarPlatform.
@@ -30,5 +42,12 @@ abstract class WearOsScrollbarPlatform extends PlatformInterface {
   /// Stream of rotary scroll events from the native platform
   Stream<double> get rotaryScrollEvents {
     throw UnimplementedError('rotaryScrollEvents has not been implemented.');
+  }
+
+  /// Performs native rotary haptic feedback on supported Wear OS devices.
+  Future<void> performRotaryHaptic({
+    WearOsRotaryHapticType type = WearOsRotaryHapticType.tick,
+  }) {
+    throw UnimplementedError('performRotaryHaptic has not been implemented.');
   }
 }

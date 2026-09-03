@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wear_os_scrollbar/wear_os_scrollbar_method_channel.dart';
+import 'package:wear_os_scrollbar/wear_os_scrollbar_platform_interface.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -30,4 +31,25 @@ void main() {
     expect(events, [42.0]);
     await subscription.cancel();
   });
+
+  test(
+    'performRotaryHaptic invokes performHapticFeedback on methods channel',
+    () async {
+      final log = <MethodCall>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(platform.methodChannel, (call) async {
+            log.add(call);
+            return null;
+          });
+
+      await platform.performRotaryHaptic(type: WearOsRotaryHapticType.tick);
+      await platform.performRotaryHaptic(type: WearOsRotaryHapticType.limit);
+
+      expect(log, hasLength(2));
+      expect(log[0].method, 'performHapticFeedback');
+      expect(log[0].arguments, {'type': 'tick'});
+      expect(log[1].method, 'performHapticFeedback');
+      expect(log[1].arguments, {'type': 'limit'});
+    },
+  );
 }
