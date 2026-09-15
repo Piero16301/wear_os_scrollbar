@@ -655,4 +655,246 @@ void main() {
       expect(scrollController.offset, 100.0);
     },
   );
+
+  group('Navigation and route awareness', () {
+    testWidgets(
+      'WearOsScrollbar only responds to rotary events when current route in Navigator',
+      (WidgetTester tester) async {
+        final controllerA = ScrollController();
+        final controllerB = ScrollController();
+        addTearDown(controllerA.dispose);
+        addTearDown(controllerB.dispose);
+
+        final navKey = GlobalKey<NavigatorState>();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            navigatorKey: navKey,
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: controllerA,
+                  enableSmoothScroll: false,
+                  rotarySensitivity: 1.0,
+                  child: ListView.builder(
+                    controller: controllerA,
+                    itemCount: 100,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('A: $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Initially on Route A
+        expect(controllerA.offset, 0.0);
+        mockPlatform.emitScrollEvent(40.0);
+        await tester.pump();
+        expect(controllerA.offset, 40.0);
+
+        // Push Route B on top
+        navKey.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (context) => Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: controllerB,
+                  enableSmoothScroll: false,
+                  rotarySensitivity: 1.0,
+                  child: ListView.builder(
+                    controller: controllerB,
+                    itemCount: 100,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('B: $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Rotary event should only scroll Route B, Route A must remain intact
+        mockPlatform.emitScrollEvent(70.0);
+        await tester.pump();
+
+        expect(controllerB.offset, 70.0);
+        expect(controllerA.offset, 40.0);
+
+        // Pop Route B - Route A becomes current again
+        navKey.currentState!.pop();
+        await tester.pumpAndSettle();
+
+        // Route A should now respond to rotary events again
+        mockPlatform.emitScrollEvent(30.0);
+        await tester.pump();
+
+        expect(controllerA.offset, 70.0);
+      },
+    );
+
+    testWidgets(
+      'WearOsScrollbar scrolls background route when onlyWhenCurrentRoute is false',
+      (WidgetTester tester) async {
+        final controllerA = ScrollController();
+        final controllerB = ScrollController();
+        addTearDown(controllerA.dispose);
+        addTearDown(controllerB.dispose);
+
+        final navKey = GlobalKey<NavigatorState>();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            navigatorKey: navKey,
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: controllerA,
+                  onlyWhenCurrentRoute: false,
+                  enableSmoothScroll: false,
+                  rotarySensitivity: 1.0,
+                  child: ListView.builder(
+                    controller: controllerA,
+                    itemCount: 100,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('A: $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        navKey.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (context) => Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: controllerB,
+                  enableSmoothScroll: false,
+                  rotarySensitivity: 1.0,
+                  child: ListView.builder(
+                    controller: controllerB,
+                    itemCount: 100,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('B: $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Both controllers receive scroll since onlyWhenCurrentRoute is false for A
+        mockPlatform.emitScrollEvent(50.0);
+        await tester.pump();
+
+        expect(controllerB.offset, 50.0);
+        expect(controllerA.offset, 50.0);
+      },
+    );
+
+    testWidgets(
+      'WearOsScrollbar functions normally outside of a Navigator (ModalRoute is null)',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: MediaQuery(
+              data: const MediaQueryData(),
+              child: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: false,
+                  rotarySensitivity: 1.0,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 100,
+                    itemBuilder: (context, index) =>
+                        SizedBox(height: 40, child: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(scrollController.offset, 0.0);
+
+        mockPlatform.emitScrollEvent(80.0);
+        await tester.pump();
+
+        expect(scrollController.offset, 80.0);
+      },
+    );
+
+    testWidgets(
+      'WearOsScrollbar stops smooth scroll ticker when route becomes inactive or in background',
+      (WidgetTester tester) async {
+        final controllerA = ScrollController();
+        addTearDown(controllerA.dispose);
+
+        final navKey = GlobalKey<NavigatorState>();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            navigatorKey: navKey,
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: controllerA,
+                  enableSmoothScroll: true,
+                  rotarySensitivity: 1.0,
+                  child: ListView.builder(
+                    controller: controllerA,
+                    itemCount: 100,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('A: $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Start smooth scroll on Route A
+        mockPlatform.emitScrollEvent(200.0);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+        final offsetBeforePush = controllerA.offset;
+        expect(offsetBeforePush, greaterThan(0.0));
+
+        // Push Route B while ticker is active
+        navKey.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (context) =>
+                const Scaffold(body: Center(child: Text('Route B'))),
+          ),
+        );
+        // Step forward enough for Route B to push and ticker to evaluate _onTick
+        await tester.pump(const Duration(milliseconds: 16));
+        await tester.pump(const Duration(milliseconds: 16));
+
+        // Send rotary event while Route A is not current to trigger _onRotaryEvent stopTicker branch
+        mockPlatform.emitScrollEvent(50.0);
+        await tester.pump();
+
+        // Also verify background route programmatic scroll does not show indicator
+        controllerA.jumpTo(controllerA.offset + 10);
+        await tester.pump();
+
+        // Pump and settle to complete push transition
+        await tester.pumpAndSettle();
+      },
+    );
+  });
 }

@@ -57,6 +57,7 @@ class WearOsScrollbar extends StatefulWidget {
     this.marginRight = 0.0,
     this.totalAngle = 30.0,
     this.hideIndicator = false,
+    this.onlyWhenCurrentRoute = true,
     super.key,
   }) : assert(
          totalAngle >= 10 && totalAngle <= 90,
@@ -116,6 +117,13 @@ class WearOsScrollbar extends StatefulWidget {
   /// Whether to hide the visual scroll indicator.
   final bool hideIndicator;
 
+  /// Whether rotary input should only be handled when this widget's enclosing
+  /// [ModalRoute] is the current, active route in the navigation stack.
+  ///
+  /// Defaults to `true` to prevent background routes in the navigation stack
+  /// from being scrolled by rotary events intended for the foreground route.
+  final bool onlyWhenCurrentRoute;
+
   @override
   State<WearOsScrollbar> createState() => _WearOsScrollbarState();
 }
@@ -154,7 +162,18 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
         .listen(_onRotaryEvent);
   }
 
+  bool get _isRouteActive {
+    if (!widget.onlyWhenCurrentRoute) return true;
+    final modalRoute = ModalRoute.of(context);
+    return modalRoute == null || modalRoute.isCurrent;
+  }
+
   void _onRotaryEvent(double event) {
+    if (!mounted || !_isRouteActive) {
+      _stopTicker();
+      return;
+    }
+
     if (!widget.controller.hasClients) return;
 
     final position = widget.controller.position;
@@ -207,7 +226,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
   }
 
   void _onTick(Duration elapsed) {
-    if (!widget.controller.hasClients) {
+    if (!mounted || !_isRouteActive || !widget.controller.hasClients) {
       _stopTicker();
       return;
     }
@@ -340,7 +359,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
   }
 
   void _showIndicator() {
-    if (widget.hideIndicator) return;
+    if (widget.hideIndicator || !_isRouteActive) return;
     if (!_isVisible) {
       setState(() {
         _isVisible = true;
