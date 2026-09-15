@@ -1,3 +1,9 @@
+## 1.1.1
+
+* **Testing & Quality:**
+  * Achieved 100% test coverage across the entire package (`369 of 369 lines`).
+  * Added widget tests covering edge cases: rotary velocity tracking gesture threshold reset, fling simulation cancellation upon incoming rotary events, fallback to `ClampingScrollSimulation` when scroll physics returns null, ticker recovery on fling timeout, and upper boundary limit haptics.
+
 ## 1.1.0
 
 * **New Feature - Native Wear OS 7 Fling Physics:**
