@@ -967,7 +967,11 @@ void main() {
         final initialLimitCalls = mockPlatform.hapticCalls
             .where((c) => c == WearOsRotaryHapticType.limit)
             .length;
-        expect(initialLimitCalls, 1, reason: 'Must trigger limit haptic on first hit');
+        expect(
+          initialLimitCalls,
+          1,
+          reason: 'Must trigger limit haptic on first hit',
+        );
 
         // 2. Further continuous turns into the same boundary must NOT vibrate again
         for (int i = 0; i < 5; i++) {
@@ -981,7 +985,8 @@ void main() {
         expect(
           repeatedLimitCalls,
           1,
-          reason: 'Continuous rotation against boundary must NOT repeat limit vibration',
+          reason:
+              'Continuous rotation against boundary must NOT repeat limit vibration',
         );
 
         // 3. Move away from boundary (scroll downwards)
@@ -1000,7 +1005,8 @@ void main() {
         expect(
           hitAgainLimitCalls,
           2,
-          reason: 'Reaching boundary again after moving away should trigger limit haptic once more',
+          reason:
+              'Reaching boundary again after moving away should trigger limit haptic once more',
         );
 
         // 5. Subsequent attempts into wall again do not vibrate
@@ -1065,55 +1071,55 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Fast rotary spinning triggers fling inertia with physical decay',
-      (WidgetTester tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: SizedBox(
-                height: 200,
-                child: WearOsScrollbar(
+    testWidgets('Fast rotary spinning triggers fling inertia with physical decay', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              height: 200,
+              child: WearOsScrollbar(
+                controller: scrollController,
+                enableSmoothScroll: true,
+                enableFling: true,
+                rotarySensitivity: 0.4,
+                child: ListView.builder(
                   controller: scrollController,
-                  enableSmoothScroll: true,
-                  enableFling: true,
-                  rotarySensitivity: 0.4,
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: 200,
-                    itemBuilder: (context, index) =>
-                        ListTile(title: Text('Item $index')),
-                  ),
+                  itemCount: 200,
+                  itemBuilder: (context, index) =>
+                      ListTile(title: Text('Item $index')),
                 ),
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        expect(scrollController.offset, 0.0);
+      expect(scrollController.offset, 0.0);
 
-        // Emit a rapid burst of rotary scroll events (spinning fast)
-        // 5 events of 80px separated by 10ms (raw delta = 5 * 80 * 0.4 = 160px)
-        for (int i = 0; i < 5; i++) {
-          mockPlatform.emitScrollEvent(80.0);
-          await tester.pump(const Duration(milliseconds: 10));
-        }
+      // Emit a rapid burst of rotary scroll events (spinning fast)
+      // 5 events of 80px separated by 10ms (raw delta = 5 * 80 * 0.4 = 160px)
+      for (int i = 0; i < 5; i++) {
+        mockPlatform.emitScrollEvent(80.0);
+        await tester.pump(const Duration(milliseconds: 10));
+      }
 
-        // Wait for fling debounce (40ms) and step into fling simulation
-        await tester.pump(const Duration(milliseconds: 50));
-        await tester.pump(const Duration(milliseconds: 100));
+      // Wait for fling debounce (40ms) and step into fling simulation
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 100));
 
-        // Complete the fling simulation
-        await tester.pumpAndSettle();
+      // Complete the fling simulation
+      await tester.pumpAndSettle();
 
-        // With fling inertia, the final offset should have glided well beyond the raw delta sum of 160px
-        expect(
-          scrollController.offset,
-          greaterThan(200.0),
-          reason: 'Fast spin should fling with inertia beyond the raw event delta sum',
-        );
-      },
-    );
+      // With fling inertia, the final offset should have glided well beyond the raw delta sum of 160px
+      expect(
+        scrollController.offset,
+        greaterThan(200.0),
+        reason:
+            'Fast spin should fling with inertia beyond the raw event delta sum',
+      );
+    });
 
     testWidgets(
       'enableFling: false disables fling inertia and only moves by event sum',
@@ -1153,7 +1159,8 @@ void main() {
         expect(
           scrollController.offset,
           closeTo(160.0, 0.1),
-          reason: 'When enableFling is false, scroll must stop exactly at accumulated delta',
+          reason:
+              'When enableFling is false, scroll must stop exactly at accumulated delta',
         );
       },
     );
@@ -1174,7 +1181,8 @@ void main() {
                   child: ListView.builder(
                     controller: scrollController,
                     itemCount: 10,
-                    itemExtent: 50.0, // total 500px, viewport 200px -> maxScroll = 300px
+                    itemExtent:
+                        50.0, // total 500px, viewport 200px -> maxScroll = 300px
                     itemBuilder: (context, index) =>
                         ListTile(title: Text('Item $index')),
                   ),
@@ -1201,7 +1209,8 @@ void main() {
               .where((c) => c == WearOsRotaryHapticType.limit)
               .length,
           1,
-          reason: 'Fling hitting bottom boundary must trigger limit haptic once',
+          reason:
+              'Fling hitting bottom boundary must trigger limit haptic once',
         );
 
         // Spinning further down while at the bottom must NOT trigger another limit haptic
@@ -1348,58 +1357,57 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Fling timeout restarts ticker if ticker was stopped',
-      (WidgetTester tester) async {
-        late StateSetter updateState;
-        var currentController = scrollController;
-        final otherController = ScrollController();
+    testWidgets('Fling timeout restarts ticker if ticker was stopped', (
+      WidgetTester tester,
+    ) async {
+      late StateSetter updateState;
+      var currentController = scrollController;
+      final otherController = ScrollController();
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: StatefulBuilder(
-                builder: (context, setState) {
-                  updateState = setState;
-                  return SizedBox(
-                    height: 200,
-                    child: WearOsScrollbar(
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                updateState = setState;
+                return SizedBox(
+                  height: 200,
+                  child: WearOsScrollbar(
+                    controller: currentController,
+                    enableSmoothScroll: true,
+                    enableFling: true,
+                    rotarySensitivity: 0.4,
+                    child: ListView.builder(
                       controller: currentController,
-                      enableSmoothScroll: true,
-                      enableFling: true,
-                      rotarySensitivity: 0.4,
-                      child: ListView.builder(
-                        controller: currentController,
-                        itemCount: 200,
-                        itemBuilder: (context, index) =>
-                            ListTile(title: Text('Item $index')),
-                      ),
+                      itemCount: 200,
+                      itemBuilder: (context, index) =>
+                          ListTile(title: Text('Item $index')),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ),
-        );
+        ),
+      );
 
-        for (int i = 0; i < 5; i++) {
-          mockPlatform.emitScrollEvent(80.0);
-          await tester.pump(const Duration(milliseconds: 10));
-        }
+      for (int i = 0; i < 5; i++) {
+        mockPlatform.emitScrollEvent(80.0);
+        await tester.pump(const Duration(milliseconds: 10));
+      }
 
-        // Change controller before 40ms timeout: didUpdateWidget calls _stopTicker()
-        updateState(() {
-          currentController = otherController;
-        });
-        await tester.pump();
+      // Change controller before 40ms timeout: didUpdateWidget calls _stopTicker()
+      updateState(() {
+        currentController = otherController;
+      });
+      await tester.pump();
 
-        // 40ms fling timer fires with inactive ticker
-        await tester.pump(const Duration(milliseconds: 50));
-        await tester.pumpAndSettle();
+      // 40ms fling timer fires with inactive ticker
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
 
-        otherController.dispose();
-      },
-    );
+      otherController.dispose();
+    });
 
     testWidgets(
       'Rotary velocity tracker resets samples when pause between events exceeds gesture threshold',
@@ -1434,4 +1442,3 @@ void main() {
     );
   });
 }
-
