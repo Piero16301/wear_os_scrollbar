@@ -150,6 +150,9 @@ WearOsScrollbar(
 | `enableLimitHaptic` | `bool` | `true` | Whether to trigger tactile limit feedback (`ROTARY_SCROLL_LIMIT`) when hitting the top or bottom of the list. |
 | `rotarySensitivity` | `double` | `0.4` | Sensitivity multiplier for rotary encoder events (calibrated to match native Wear OS / Pixel Watch settings). |
 | `enableSmoothScroll` | `bool` | `true` | Whether to interpolate rotary scrolling with natural decay physics instead of jumping abruptly. |
+| `enableFling` | `bool` | `true` | Whether rapid crown/bezel rotation produces native ballistic fling momentum until decelerating to a stop. |
+| `flingFactor` | `double` | `0.7` | Fling velocity scaling factor (defaults to `0.7` matching Wear Compose standards). |
+| `onlyWhenCurrentRoute` | `bool` | `true` | Prevents background routes from intercepting rotary events intended for the active foreground route. |
 | `indicatorColor` | `Color` | `Colors.white` | Color of the active scroll indicator. |
 | `backgroundColor` | `Color` | `Colors.white30` | Color of the background track arc. |
 | `strokeWidth` | `double` | `6.0` | Thickness of the scrollbar (must be between 1 and 10). |

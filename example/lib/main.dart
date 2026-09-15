@@ -45,27 +45,24 @@ class _MyAppState extends State<MyApp> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ListView.builder(
                 controller: _controller,
-                itemCount: 20,
+                itemCount: 100,
                 itemBuilder: (context, index) {
-                  return WearOsExpressiveItem(
-                    scrollController: _controller,
-                    child: Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.symmetric(vertical: 2),
-                      child: CardAction(
-                        content: Text('Item ${index + 1}'),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Tapped on Item ${index + 1}',
-                                textAlign: TextAlign.center,
-                              ),
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(vertical: 2),
+                    child: CardAction(
+                      content: Text('Item ${index + 1}'),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Tapped on Item ${index + 1}',
+                              textAlign: TextAlign.center,
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   );
                 },

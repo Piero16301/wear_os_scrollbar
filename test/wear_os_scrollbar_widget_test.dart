@@ -583,6 +583,25 @@ void main() {
         throwsAssertionError,
       );
     });
+
+    test('flingFactor must be between 0 and 2.0', () {
+      expect(
+        () => WearOsScrollbar(
+          controller: scrollController,
+          flingFactor: 0,
+          child: Container(),
+        ),
+        throwsAssertionError,
+      );
+      expect(
+        () => WearOsScrollbar(
+          controller: scrollController,
+          flingFactor: 2.5,
+          child: Container(),
+        ),
+        throwsAssertionError,
+      );
+    });
   });
 
   testWidgets(
@@ -897,4 +916,288 @@ void main() {
       },
     );
   });
+
+  group('Wear OS 7 native physics and single limit haptic', () {
+    testWidgets(
+      'Limit haptic only triggers once when rotating continuously against boundary',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  hapticFeedback: WearOsHapticFeedback.rotaryTick,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 100,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(scrollController.offset, 0.0);
+
+        // 1. First rotation attempt past top boundary (offset = 0)
+        mockPlatform.emitScrollEvent(-50.0);
+        await tester.pump();
+
+        final initialLimitCalls = mockPlatform.hapticCalls
+            .where((c) => c == WearOsRotaryHapticType.limit)
+            .length;
+        expect(initialLimitCalls, 1, reason: 'Must trigger limit haptic on first hit');
+
+        // 2. Further continuous turns into the same boundary must NOT vibrate again
+        for (int i = 0; i < 5; i++) {
+          mockPlatform.emitScrollEvent(-50.0);
+          await tester.pump(const Duration(milliseconds: 30));
+        }
+
+        final repeatedLimitCalls = mockPlatform.hapticCalls
+            .where((c) => c == WearOsRotaryHapticType.limit)
+            .length;
+        expect(
+          repeatedLimitCalls,
+          1,
+          reason: 'Continuous rotation against boundary must NOT repeat limit vibration',
+        );
+
+        // 3. Move away from boundary (scroll downwards)
+        mockPlatform.emitScrollEvent(100.0);
+        await tester.pumpAndSettle();
+        expect(scrollController.offset, greaterThan(0.0));
+
+        // 4. Scroll back up and hit top boundary again
+        mockPlatform.emitScrollEvent(-200.0);
+        await tester.pumpAndSettle();
+        expect(scrollController.offset, 0.0);
+
+        final hitAgainLimitCalls = mockPlatform.hapticCalls
+            .where((c) => c == WearOsRotaryHapticType.limit)
+            .length;
+        expect(
+          hitAgainLimitCalls,
+          2,
+          reason: 'Reaching boundary again after moving away should trigger limit haptic once more',
+        );
+
+        // 5. Subsequent attempts into wall again do not vibrate
+        mockPlatform.emitScrollEvent(-50.0);
+        await tester.pump();
+        expect(
+          mockPlatform.hapticCalls
+              .where((c) => c == WearOsRotaryHapticType.limit)
+              .length,
+          2,
+        );
+      },
+    );
+
+    testWidgets(
+      'Limit haptic in instant mode only triggers once when rotating against boundary',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: false,
+                  hapticFeedback: WearOsHapticFeedback.rotaryTick,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 100,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(scrollController.offset, 0.0);
+
+        // First hit at 0.0
+        mockPlatform.emitScrollEvent(-50.0);
+        await tester.pump();
+        expect(
+          mockPlatform.hapticCalls
+              .where((c) => c == WearOsRotaryHapticType.limit)
+              .length,
+          1,
+        );
+
+        // Repeated hits at 0.0 in instant mode
+        mockPlatform.emitScrollEvent(-50.0);
+        await tester.pump();
+        mockPlatform.emitScrollEvent(-50.0);
+        await tester.pump();
+        expect(
+          mockPlatform.hapticCalls
+              .where((c) => c == WearOsRotaryHapticType.limit)
+              .length,
+          1,
+        );
+      },
+    );
+
+    testWidgets(
+      'Fast rotary spinning triggers fling inertia with physical decay',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: true,
+                  enableFling: true,
+                  rotarySensitivity: 0.4,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 200,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(scrollController.offset, 0.0);
+
+        // Emit a rapid burst of rotary scroll events (spinning fast)
+        // 5 events of 80px separated by 10ms (raw delta = 5 * 80 * 0.4 = 160px)
+        for (int i = 0; i < 5; i++) {
+          mockPlatform.emitScrollEvent(80.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+
+        // Wait for fling debounce (40ms) and step into fling simulation
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Complete the fling simulation
+        await tester.pumpAndSettle();
+
+        // With fling inertia, the final offset should have glided well beyond the raw delta sum of 160px
+        expect(
+          scrollController.offset,
+          greaterThan(200.0),
+          reason: 'Fast spin should fling with inertia beyond the raw event delta sum',
+        );
+      },
+    );
+
+    testWidgets(
+      'enableFling: false disables fling inertia and only moves by event sum',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: true,
+                  enableFling: false,
+                  rotarySensitivity: 0.4,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 200,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(scrollController.offset, 0.0);
+
+        for (int i = 0; i < 5; i++) {
+          mockPlatform.emitScrollEvent(80.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+
+        await tester.pumpAndSettle();
+
+        // 5 * 80.0 * 0.4 = 160.0
+        expect(
+          scrollController.offset,
+          closeTo(160.0, 0.1),
+          reason: 'When enableFling is false, scroll must stop exactly at accumulated delta',
+        );
+      },
+    );
+
+    testWidgets(
+      'Fling hitting list boundary stops at maxScrollExtent and triggers limit haptic once',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: true,
+                  enableFling: true,
+                  hapticFeedback: WearOsHapticFeedback.rotaryTick,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 10,
+                    itemExtent: 50.0, // total 500px, viewport 200px -> maxScroll = 300px
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(scrollController.offset, 0.0);
+
+        // Fast fling downwards
+        for (int i = 0; i < 6; i++) {
+          mockPlatform.emitScrollEvent(100.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+
+        await tester.pumpAndSettle();
+
+        // Hit the bottom limit (maxScrollExtent = 300.0)
+        expect(scrollController.offset, 300.0);
+        expect(
+          mockPlatform.hapticCalls
+              .where((c) => c == WearOsRotaryHapticType.limit)
+              .length,
+          1,
+          reason: 'Fling hitting bottom boundary must trigger limit haptic once',
+        );
+
+        // Spinning further down while at the bottom must NOT trigger another limit haptic
+        mockPlatform.emitScrollEvent(50.0);
+        await tester.pump();
+        expect(
+          mockPlatform.hapticCalls
+              .where((c) => c == WearOsRotaryHapticType.limit)
+              .length,
+          1,
+        );
+      },
+    );
+  });
 }
+

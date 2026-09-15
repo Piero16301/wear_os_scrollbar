@@ -1,19 +1,24 @@
+## 1.1.0
+
+* **New Feature - Native Wear OS 7 Fling Physics:**
+  * Added `enableFling` and `flingFactor` to support natural ballistic momentum and friction decay when spinning the rotary input quickly.
+* **Fix - Single Boundary Limit Haptic:**
+  * Fixed repetitive vibrations at list boundaries: limit haptic now triggers only once upon reaching the start or end, silencing further rotation until scrolling away.
+* **New Feature - Route Navigation Isolation:**
+  * Added `onlyWhenCurrentRoute` to restrict rotary input strictly to the active foreground route, preserving scroll positions when navigating between pages.
+* **Testing:**
+  * Added unit and widget tests for fling inertia, boundary haptic silencing, and navigation isolation.
+
 ## 1.0.0
 
 * **New Feature - Native Wear OS Rotary Haptics:**
-  * Implemented native rotary crown tactile feedback using official Android Wear OS constants (`HapticFeedbackConstants.ROTARY_SCROLL_TICK` for crown notches and `HapticFeedbackConstants.ROTARY_SCROLL_LIMIT` for list bounds).
-  * Added `WearOsHapticFeedback.rotaryTick` as the default feedback mode, producing crisp, subtle mechanical clicks on Pixel Watch 3 and modern Wear OS devices instead of harsh phone motor vibrations.
-  * Added `WearOsHapticFeedback.none` to allow disabling haptic feedback.
-  * Added `enableLimitHaptic` option (defaults to `true`) to provide tactile boundary bump feedback when reaching the top or bottom extent of the scrollable list.
-  * Added `WearOsRotaryHapticType` and `performRotaryHaptic()` across the platform interface and native method channel.
-* **Improvement - Smooth Continuous Rotary Scrolling & Natural Decay Physics:**
-  * Replaced abrupt instantaneous scroll jumps (`jumpTo`) with a continuous exponential decay ticker (`enableSmoothScroll = true`), providing fluid scrolling and natural deceleration matching native Wear OS settings.
-  * Added `rotarySensitivity` parameter (defaults to `0.4`), calibrating crown scroll velocity from raw 64–128px jumps down to a comfortable, native ~24px per notch.
-  * Added touch gesture interruption: smoothly stops active rotary animations whenever the user touches the screen to perform a manual drag.
-* **Compatibility:**
-  * Updated dependency `material_ui` to `^1.1.1`.
-* **Testing:**
-  * Added tests covering native rotary haptics, boundary limit haptics, smooth decay physics, method channel calls, and assertions.
+  * Added native crown tactile feedback with `WearOsHapticFeedback.rotaryTick` (using Android's `ROTARY_SCROLL_TICK` and `ROTARY_SCROLL_LIMIT`).
+  * Added `enableLimitHaptic` to signal boundary collisions at the top/bottom of lists.
+* **Improvement - Smooth Continuous Rotary Scrolling:**
+  * Added `enableSmoothScroll` with exponential decay interpolation and `rotarySensitivity` for calibrated, fluid crown navigation.
+  * Added touch interruption to smoothly stop active rotary animations on user drag.
+* **Compatibility & Testing:**
+  * Updated `material_ui` dependency to `^1.1.1` and added comprehensive unit and widget tests.
 
 ## 0.2.2
 

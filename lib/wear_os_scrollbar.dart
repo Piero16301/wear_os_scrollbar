@@ -51,6 +51,8 @@ class WearOsScrollbar extends StatefulWidget {
     this.enableLimitHaptic = true,
     this.rotarySensitivity = 0.4,
     this.enableSmoothScroll = true,
+    this.enableFling = true,
+    this.flingFactor = 0.7,
     this.indicatorColor = Colors.white,
     this.backgroundColor = Colors.white30,
     this.strokeWidth = 6.0,
@@ -74,6 +76,10 @@ class WearOsScrollbar extends StatefulWidget {
        assert(
          rotarySensitivity > 0 && rotarySensitivity <= 2.0,
          'rotarySensitivity must be between 0 and 2.0',
+       ),
+       assert(
+         flingFactor > 0 && flingFactor <= 2.0,
+         'flingFactor must be between 0 and 2.0',
        );
 
   /// The scroll controller of the scrollable widget.
@@ -98,6 +104,17 @@ class WearOsScrollbar extends StatefulWidget {
 
   /// Whether to smoothly interpolate rotary scrolling with natural decay physics.
   final bool enableSmoothScroll;
+
+  /// Whether to enable fling inertia physics when spinning the rotary input quickly.
+  ///
+  /// Matches the native Wear OS 7 behavior where rapid crown/bezel rotation
+  /// continues to scroll and decelerate naturally with friction until stopping.
+  final bool enableFling;
+
+  /// Scale multiplier applied to fling velocity.
+  ///
+  /// Defaults to `0.7` to match the official Wear Compose rotary fling ratio.
+  final double flingFactor;
 
   /// The color of the active scroll indicator.
   final Color indicatorColor;
@@ -128,6 +145,57 @@ class WearOsScrollbar extends StatefulWidget {
   State<WearOsScrollbar> createState() => _WearOsScrollbarState();
 }
 
+class _RotarySample {
+  const _RotarySample(this.timeMs, this.delta);
+  final int timeMs;
+  final double delta;
+}
+
+class _RotaryVelocityTracker {
+  static const int _horizonMs = 120;
+  static const int _gestureThresholdMs = 200;
+
+  final List<_RotarySample> _samples = [];
+  int _lastSampleTimeMs = 0;
+
+  void addSample(int timeMs, double delta) {
+    if (_lastSampleTimeMs != 0 &&
+        timeMs - _lastSampleTimeMs > _gestureThresholdMs) {
+      _samples.clear();
+    }
+    _lastSampleTimeMs = timeMs;
+    _samples.add(_RotarySample(timeMs, delta));
+    final cutoff = timeMs - _horizonMs;
+    _samples.removeWhere((s) => s.timeMs < cutoff);
+  }
+
+  void reset() {
+    _samples.clear();
+    _lastSampleTimeMs = 0;
+  }
+
+  /// Calculates the velocity in logical pixels per second using the Impulse algorithm.
+  double calculateVelocity() {
+    if (_samples.length < 2) return 0.0;
+
+    double work = 0.0;
+    for (int i = _samples.length - 1; i >= 1; i--) {
+      final dt = (_samples[i].timeMs - _samples[i - 1].timeMs) / 1000.0;
+      if (dt <= 0.0) continue;
+
+      final vCurr = _samples[i].delta / dt;
+      final vPrev = work == 0.0 ? 0.0 : (work.sign * sqrt(2.0 * work.abs()));
+      work += (vCurr - vPrev) * vCurr.abs();
+      if (i == _samples.length - 1) {
+        work *= 0.5;
+      }
+    }
+
+    if (work == 0.0 || work.isNaN) return 0.0;
+    return work.sign * sqrt(2.0 * work.abs());
+  }
+}
+
 class _WearOsScrollbarState extends State<WearOsScrollbar>
     with SingleTickerProviderStateMixin {
   StreamSubscription<dynamic>? _rotarySubscription;
@@ -144,7 +212,12 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
   double _targetOffset = 0;
   Duration? _lastTickTime;
   bool _isRotaryDrivingScroll = false;
-  DateTime _lastLimitHapticTime = DateTime.fromMillisecondsSinceEpoch(0);
+
+  bool _overscrollHapticTriggered = false;
+  final _RotaryVelocityTracker _velocityTracker = _RotaryVelocityTracker();
+  Timer? _flingTimer;
+  Simulation? _activeSimulation;
+  Duration? _simulationStartTime;
 
   @override
   void initState() {
@@ -181,26 +254,39 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
     final maxScroll = position.maxScrollExtent;
 
     if (maxScroll <= minScroll) {
-      if (widget.enableLimitHaptic) {
+      if (widget.enableLimitHaptic && !_overscrollHapticTriggered) {
         _triggerLimitHaptic();
+        _overscrollHapticTriggered = true;
       }
       return;
     }
 
     final scrollDelta = event * widget.rotarySensitivity;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
 
     if (!widget.enableSmoothScroll) {
-      final newOffset = (widget.controller.offset + scrollDelta).clamp(
+      final currentOffset = widget.controller.offset;
+      final newOffset = (currentOffset + scrollDelta).clamp(
         minScroll,
         maxScroll,
       );
-      if (newOffset != widget.controller.offset) {
+      if (newOffset != currentOffset) {
+        _overscrollHapticTriggered = false;
         widget.controller.jumpTo(newOffset);
         _checkHaptic(scrollDelta.abs());
       } else if (widget.enableLimitHaptic) {
-        _triggerLimitHaptic();
+        if (!_overscrollHapticTriggered) {
+          _triggerLimitHaptic();
+          _overscrollHapticTriggered = true;
+        }
       }
       return;
+    }
+
+    // Cancel any ongoing fling simulation if a new rotary event arrives
+    if (_activeSimulation != null) {
+      _activeSimulation = null;
+      _simulationStartTime = null;
     }
 
     if (!_isRotaryDrivingScroll) {
@@ -211,13 +297,67 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
     _targetOffset = (_targetOffset + scrollDelta).clamp(minScroll, maxScroll);
 
     if (_targetOffset == prevTarget && scrollDelta != 0) {
-      if (widget.enableLimitHaptic) {
+      if (widget.enableLimitHaptic && !_overscrollHapticTriggered) {
         _triggerLimitHaptic();
+        _overscrollHapticTriggered = true;
       }
+      _velocityTracker.reset();
+      _flingTimer?.cancel();
     } else {
+      _overscrollHapticTriggered = false;
       _checkHaptic(scrollDelta.abs());
+      if (widget.enableFling) {
+        _velocityTracker.addSample(nowMs, scrollDelta);
+        _flingTimer?.cancel();
+        _flingTimer = Timer(const Duration(milliseconds: 40), _onFlingTimeout);
+      }
     }
 
+    if (!_ticker.isActive) {
+      _lastTickTime = null;
+      _isRotaryDrivingScroll = true;
+      _ticker.start();
+    }
+  }
+
+  void _onFlingTimeout() {
+    if (!mounted || !_isRouteActive || !widget.controller.hasClients) return;
+    if (!widget.enableFling || !widget.enableSmoothScroll) return;
+
+    final rawVelocity = _velocityTracker.calculateVelocity();
+    _velocityTracker.reset();
+
+    final velocity = rawVelocity * widget.flingFactor;
+    const minFlingVelocity = 150.0;
+    const maxFlingVelocity = 8000.0;
+
+    if (velocity.abs() < minFlingVelocity) return;
+
+    final currentOffset = widget.controller.offset;
+    final position = widget.controller.position;
+    final minScroll = position.minScrollExtent;
+    final maxScroll = position.maxScrollExtent;
+
+    if (velocity < 0 && currentOffset <= minScroll) return;
+    if (velocity > 0 && currentOffset >= maxScroll) return;
+
+    final clampedVelocity = velocity.clamp(-maxFlingVelocity, maxFlingVelocity);
+
+    Simulation? sim;
+    try {
+      sim = position.physics.createBallisticSimulation(
+        position,
+        clampedVelocity,
+      );
+    } catch (_) {}
+    sim ??= ClampingScrollSimulation(
+      position: currentOffset,
+      velocity: clampedVelocity,
+      friction: 0.015,
+    );
+
+    _activeSimulation = sim;
+    _simulationStartTime = null;
     if (!_ticker.isActive) {
       _lastTickTime = null;
       _isRotaryDrivingScroll = true;
@@ -236,6 +376,51 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
       return;
     }
 
+    // 1. Ballistic Fling Simulation
+    if (_activeSimulation != null) {
+      _simulationStartTime ??= elapsed;
+      final simTime =
+          (elapsed - _simulationStartTime!).inMicroseconds / 1000000.0;
+      final newOffset = _activeSimulation!.x(simTime);
+
+      final position = widget.controller.position;
+      final minScroll = position.minScrollExtent;
+      final maxScroll = position.maxScrollExtent;
+
+      if (newOffset <= minScroll) {
+        widget.controller.jumpTo(minScroll);
+        _targetOffset = minScroll;
+        _activeSimulation = null;
+        if (!_overscrollHapticTriggered && widget.enableLimitHaptic) {
+          _triggerLimitHaptic();
+          _overscrollHapticTriggered = true;
+        }
+        _stopTicker();
+        return;
+      } else if (newOffset >= maxScroll) {
+        widget.controller.jumpTo(maxScroll);
+        _targetOffset = maxScroll;
+        _activeSimulation = null;
+        if (!_overscrollHapticTriggered && widget.enableLimitHaptic) {
+          _triggerLimitHaptic();
+          _overscrollHapticTriggered = true;
+        }
+        _stopTicker();
+        return;
+      } else {
+        _overscrollHapticTriggered = false;
+        widget.controller.jumpTo(newOffset);
+        _targetOffset = newOffset;
+        if (_activeSimulation!.isDone(simTime)) {
+          _activeSimulation = null;
+          _stopTicker();
+          return;
+        }
+      }
+      return;
+    }
+
+    // 2. Direct Smooth Scroll
     final dt = (elapsed - _lastTickTime!).inMicroseconds / 1000000.0;
     _lastTickTime = elapsed;
 
@@ -246,7 +431,17 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
 
     if (distance.abs() < 0.5) {
       widget.controller.jumpTo(_targetOffset);
-      _stopTicker();
+      final position = widget.controller.position;
+      if (_targetOffset <= position.minScrollExtent ||
+          _targetOffset >= position.maxScrollExtent) {
+        if (!_overscrollHapticTriggered && widget.enableLimitHaptic) {
+          _triggerLimitHaptic();
+          _overscrollHapticTriggered = true;
+        }
+      }
+      if (_flingTimer == null || !_flingTimer!.isActive) {
+        _stopTicker();
+      }
       return;
     }
 
@@ -263,20 +458,18 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
       _ticker.stop();
     }
     _lastTickTime = null;
+    _activeSimulation = null;
+    _simulationStartTime = null;
     _isRotaryDrivingScroll = false;
   }
 
   void _triggerLimitHaptic() {
-    final now = DateTime.now();
-    if (now.difference(_lastLimitHapticTime).inMilliseconds >= 200) {
-      _lastLimitHapticTime = now;
-      if (widget.hapticFeedback == WearOsHapticFeedback.rotaryTick) {
-        WearOsScrollbarPlatform.instance.performRotaryHaptic(
-          type: WearOsRotaryHapticType.limit,
-        );
-      } else if (widget.hapticFeedback != WearOsHapticFeedback.none) {
-        _performHapticFeedback();
-      }
+    if (widget.hapticFeedback == WearOsHapticFeedback.rotaryTick) {
+      WearOsScrollbarPlatform.instance.performRotaryHaptic(
+        type: WearOsRotaryHapticType.limit,
+      );
+    } else if (widget.hapticFeedback != WearOsHapticFeedback.none) {
+      _performHapticFeedback();
     }
   }
 
@@ -331,6 +524,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
     unawaited(_rotarySubscription?.cancel());
     widget.controller.removeListener(_onScroll);
     _hideTimer?.cancel();
+    _flingTimer?.cancel();
     _ticker.dispose();
     super.dispose();
   }
@@ -338,6 +532,11 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
   void _onScroll() {
     if (!_isRotaryDrivingScroll && widget.controller.hasClients) {
       _targetOffset = widget.controller.offset;
+      final position = widget.controller.position;
+      if (position.pixels > position.minScrollExtent &&
+          position.pixels < position.maxScrollExtent) {
+        _overscrollHapticTriggered = false;
+      }
     }
     _updateMetrics();
     _showIndicator();
@@ -385,6 +584,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
           onNotification: (notification) {
             if (notification is ScrollStartNotification &&
                 notification.dragDetails != null) {
+              _flingTimer?.cancel();
               _stopTicker();
               if (widget.controller.hasClients) {
                 _targetOffset = widget.controller.offset;
