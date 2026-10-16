@@ -60,6 +60,7 @@ class WearOsScrollbar extends StatefulWidget {
     this.totalAngle = 30.0,
     this.hideIndicator = false,
     this.onlyWhenCurrentRoute = true,
+    this.indicatorGap,
     super.key,
   }) : assert(
          totalAngle >= 10 && totalAngle <= 90,
@@ -80,6 +81,10 @@ class WearOsScrollbar extends StatefulWidget {
        assert(
          flingFactor > 0 && flingFactor <= 2.0,
          'flingFactor must be between 0 and 2.0',
+       ),
+       assert(
+         indicatorGap == null || (indicatorGap >= 0 && indicatorGap <= 20),
+         'indicatorGap must be between 0 and 20 if provided',
        );
 
   /// The scroll controller of the scrollable widget.
@@ -140,6 +145,10 @@ class WearOsScrollbar extends StatefulWidget {
   /// Defaults to `true` to prevent background routes in the navigation stack
   /// from being scrolled by rotary events intended for the foreground route.
   final bool onlyWhenCurrentRoute;
+
+  /// If provided, specifies the gap between the scroll indicator
+  /// and the track. If omitted, defaults to `strokeWidth / 2`.
+  final double? indicatorGap;
 
   @override
   State<WearOsScrollbar> createState() => _WearOsScrollbarState();
@@ -610,6 +619,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
                     strokeWidth: widget.strokeWidth,
                     marginRight: widget.marginRight,
                     totalAngle: widget.totalAngle,
+                    indicatorGap: widget.indicatorGap,
                   ),
                 ),
               ),
@@ -630,6 +640,7 @@ class _CircularScrollIndicatorPainter extends CustomPainter {
     required this.strokeWidth,
     required this.marginRight,
     required this.totalAngle,
+    required this.indicatorGap,
   });
 
   final double scrollPosition;
@@ -640,6 +651,7 @@ class _CircularScrollIndicatorPainter extends CustomPainter {
   final double strokeWidth;
   final double marginRight;
   final double totalAngle;
+  final double? indicatorGap;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -682,7 +694,7 @@ class _CircularScrollIndicatorPainter extends CustomPainter {
     final movableSweepAngle = sweepAngle - indicatorSweepAngle;
     final indicatorStartAngle = startAngle + (movableSweepAngle * scrollRatio);
 
-    final gapSize = strokeWidth / 2;
+    final gapSize = indicatorGap ?? strokeWidth / 2;
     final gapAngle = radius > 0 ? (strokeWidth + gapSize) / radius : 0;
 
     final topTrackSweep = (indicatorStartAngle - gapAngle) - startAngle;
@@ -729,6 +741,7 @@ class _CircularScrollIndicatorPainter extends CustomPainter {
         oldDelegate.backgroundColor != backgroundColor ||
         oldDelegate.strokeWidth != strokeWidth ||
         oldDelegate.marginRight != marginRight ||
-        oldDelegate.totalAngle != totalAngle;
+        oldDelegate.totalAngle != totalAngle ||
+        oldDelegate.indicatorGap != indicatorGap;
   }
 }
