@@ -3,9 +3,9 @@
 [![pub package](https://img.shields.io/pub/v/wear_os_scrollbar.svg)](https://pub.dev/packages/wear_os_scrollbar)
 [![pub points](https://img.shields.io/pub/points/wear_os_scrollbar?color=2E8B57&label=pub%20points)](https://pub.dev/packages/wear_os_scrollbar/score)
 [![code factor](https://www.codefactor.io/repository/github/Piero16301/wear_os_scrollbar/badge)](https://www.codefactor.io/repository/github/Piero16301/wear_os_scrollbar)
-[![analysis](https://github.com/Piero16301/wear_os_scrollbar/actions/workflows/code-analysis.yml/badge.svg)](https://github.com/Piero16301/wear_os_scrollbar/actions)
+[![analysis](https://github.com/Piero16301/wear_os_scrollbar/actions/workflows/deploy.yaml/badge.svg)](https://github.com/Piero16301/wear_os_scrollbar/actions)
 [![codecov](https://codecov.io/gh/Piero16301/wear_os_scrollbar/graph/badge.svg)](https://codecov.io/gh/Piero16301/wear_os_scrollbar)
-[![Star on Github](https://img.shields.io/github/stars/Piero16301/wear_os_scrollbar.svg?style=flat&logo=github&colorB=deeppink&label=stars)](https://github.com/Piero16301/wear_os_scrollbar)
+[![Star on GitHub](https://img.shields.io/github/stars/Piero16301/wear_os_scrollbar.svg?style=flat&logo=github&colorB=deeppink&label=stars)](https://github.com/Piero16301/wear_os_scrollbar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/sanjuanpamk)
 
@@ -19,7 +19,7 @@ This package provides a customizable circular scrollbar that automatically respo
 * **Smooth Rotary Input & Natural Decay:** Automatically listens to the watch's physical rotary encoder (crown/bezel) and scrolls with continuous exponential decay physics matching Wear OS system settings.
 * **Native Wear OS Rotary Haptics:** Official Android `ROTARY_SCROLL_TICK` crown detents and `ROTARY_SCROLL_LIMIT` boundary clicks for Pixel Watch 3 and modern Wear OS devices.
 * **Touch Interruption:** Fluidly cancels active rotary deceleration whenever the user touches the screen to perform a manual drag.
-* **Highly Customizable:** Easily configure scroll velocity (`rotarySensitivity`), smooth scrolling, colors, stroke width, margins, and span angle.
+* **Highly Customizable:** Easily configure scroll velocity (`rotarySensitivity`), smooth scrolling, colors, stroke width, margins, span angle, and indicator gap.
 * **Hide Indicator:** Option to hide the visual indicator while keeping rotary and haptic functionality.
 * **Auto-hiding:** Smoothly fades out when not actively scrolling.
 
@@ -35,7 +35,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  wear_os_scrollbar: ^1.0.0
+  wear_os_scrollbar: ^1.1.2
 ```
 
 ## ⚙️ Configuration

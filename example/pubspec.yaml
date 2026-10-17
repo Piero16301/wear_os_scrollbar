@@ -11,8 +11,8 @@ dependencies:
     sdk: flutter
   wear_os_scrollbar:
     path: ../
-  cupertino_icons: ^1.0.9
-  material_ui: ^1.2.0
+  cupertino_icons: ^2.0.0
+  material_ui: ^1.7.0
 
 dev_dependencies:
   integration_test:

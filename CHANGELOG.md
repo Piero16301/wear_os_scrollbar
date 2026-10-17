@@ -1,3 +1,13 @@
+## 1.1.2
+
+* **Dependencies:**
+  * Updated `material_ui` dependency to `^1.7.0`.
+* **New Feature - Indicator Gap:**
+  * Added `indicatorGap` property to `WearOsScrollbar` to allow custom spacing between the scroll indicator and the track.
+* **Testing & Quality:**
+  * Added widget tests for `indicatorGap`.
+  * Achieved 100% test coverage in the example application.
+
 ## 1.1.1
 
 * **Testing & Quality:**
