@@ -338,7 +338,8 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
 
     final velocity = rawVelocity * widget.flingFactor;
     const minFlingVelocity = 150.0;
-    const maxFlingVelocity = 8000.0;
+    const maxFlingVelocity = 2800.0;
+    const rotaryFlingFriction = 0.055;
 
     if (velocity.abs() < minFlingVelocity) return;
 
@@ -352,17 +353,10 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
 
     final clampedVelocity = velocity.clamp(-maxFlingVelocity, maxFlingVelocity);
 
-    Simulation? sim;
-    try {
-      sim = position.physics.createBallisticSimulation(
-        position,
-        clampedVelocity,
-      );
-    } catch (_) {}
-    sim ??= ClampingScrollSimulation(
+    final sim = ClampingScrollSimulation(
       position: currentOffset,
       velocity: clampedVelocity,
-      friction: 0.015,
+      friction: rotaryFlingFriction,
     );
 
     _activeSimulation = sim;

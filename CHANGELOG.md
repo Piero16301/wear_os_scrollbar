@@ -1,3 +1,9 @@
+## 1.1.3
+
+* **Fix - Native Wear OS 7 Rotary Fling Deceleration:**
+  * Fixed an issue where fast crown rotation caused the list to scroll indefinitely to the end on long lists.
+  * Replaced touchscreen drag physics (`friction: 0.015` and unbounded velocity) with native Wear OS rotary decay physics (`friction: 0.055`, `maxFlingVelocity: 2800.0`) matching Pixel Watch 3 and Wear Compose standards, ensuring flings naturally decelerate and stop after advancing 1–2 viewport heights.
+
 ## 1.1.2
 
 * **Dependencies:**
