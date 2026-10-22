@@ -34,7 +34,7 @@ jobs:
 
   spell-check:
     name: "🔍 Spell Check"
-    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/spell_check.yml@v1
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/spell_check.yml@v2
     with:
       runs_on: ubuntu-26.04
       includes: |
