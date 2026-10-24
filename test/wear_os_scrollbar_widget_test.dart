@@ -1524,5 +1524,146 @@ void main() {
         await tester.pumpAndSettle();
       },
     );
+
+    testWidgets(
+      'Normal moderate rotary scrolling does not trigger fling jump and stops exactly at accumulated delta',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: true,
+                  enableFling: true,
+                  rotarySensitivity: 0.4,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 200,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(scrollController.offset, 0.0);
+
+        // 4 clicks separated by 60ms (~426 px/s, well below the 1000 px/s fling threshold)
+        // 4 * 64.0 * 0.4 = 102.4px
+        for (int i = 0; i < 4; i++) {
+          mockPlatform.emitScrollEvent(64.0);
+          await tester.pump(const Duration(milliseconds: 60));
+        }
+
+        // Wait for fling timer (40ms) and allow smooth scroll to settle
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        expect(
+          scrollController.offset,
+          closeTo(102.4, 0.1),
+          reason:
+              'Normal turning must not fling and must stop precisely at accumulated delta without an extra jump',
+        );
+      },
+    );
+
+    testWidgets(
+      'Fast rotation that decelerates to a stop before release does not trigger fling',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: true,
+                  enableFling: true,
+                  rotarySensitivity: 0.4,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 200,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.runAsync(() async {
+          mockPlatform.emitScrollEvent(80.0);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          mockPlatform.emitScrollEvent(80.0);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          mockPlatform.emitScrollEvent(80.0);
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+          // Decelerating event: 10.0 after 25ms (instantaneous velocity = 10 * 0.4 / 0.025 = 160 px/s < 600 px/s)
+          mockPlatform.emitScrollEvent(10.0);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        });
+        await tester.pumpAndSettle();
+
+        // Total raw delta = (80 * 3 + 10) * 0.4 = 250 * 0.4 = 100.0px
+        expect(
+          scrollController.offset,
+          closeTo(100.0, 0.1),
+          reason:
+              'Decelerating to a stop must cancel fling and settle directly at accumulated offset',
+        );
+      },
+    );
+
+    testWidgets(
+      'Rotary events that reverse direction on the final click do not trigger fling',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: true,
+                  enableFling: true,
+                  rotarySensitivity: 0.4,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 200,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Fast positive events followed immediately by an opposite event (bounce/reversal)
+        for (int i = 0; i < 3; i++) {
+          mockPlatform.emitScrollEvent(80.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+        mockPlatform.emitScrollEvent(-40.0);
+        await tester.pump(const Duration(milliseconds: 10));
+
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        // Total raw delta = (80 * 3 - 40) * 0.4 = 200 * 0.4 = 80.0px
+        expect(
+          scrollController.offset,
+          closeTo(80.0, 0.1),
+          reason:
+              'Direction reversal on final tick must prevent ballistic fling in original direction',
+        );
+      },
+    );
   });
 }

@@ -1,3 +1,13 @@
+## 1.1.4
+
+* **Fix - Calibrated Rotary Fling & Zero-Jump Release:**
+  * Fixed an issue where rotating the watch crown and stopping caused an unexpected post-scroll jump or extra drift, making the crown feel uncalibrated.
+  * Increased minimum fling threshold from `150.0 px/s` to native Wear OS standard `1000.0 px/s`, ensuring normal scrolling and step-by-step browsing settle cleanly at the accumulated target with 1:1 precision.
+  * Added instantaneous deceleration and directional consistency checks in `_RotaryVelocityTracker` to prevent ballistic flings when the user decelerates or stops turning the crown before release.
+* **Testing & Quality:**
+  * Added widget tests verifying that moderate rotation speeds, decelerations, and direction reversals settle precisely without launching fling simulations.
+  * Maintained 100% test coverage across all lines.
+
 ## 1.1.3
 
 * **Fix - Native Wear OS 7 Rotary Fling Deceleration:**
@@ -9,7 +19,7 @@
 * **Dependencies:**
   * Updated `material_ui` dependency to `^1.7.0`.
 * **New Feature - Indicator Gap:**
-  * Added `indicatorGap` property to `WearOsScrollbar` to allow custom spacing between the scroll indicator and the track.
+  * Added `indicatorGap` property to `WearOsScrollbar` to allow custom spacing between the scroll indicator and the track. Thanks to [@ryanlaney](https://github.com/ryanlaney) for the contribution.
 * **Testing & Quality:**
   * Added widget tests for `indicatorGap`.
   * Achieved 100% test coverage in the example application.

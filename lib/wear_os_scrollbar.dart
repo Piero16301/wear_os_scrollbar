@@ -203,6 +203,20 @@ class _RotaryVelocityTracker {
     if (work == 0.0 || work.isNaN) return 0.0;
     return work.sign * sqrt(2.0 * work.abs());
   }
+
+  /// Returns the instantaneous velocity of the final sample interval.
+  double get lastInstantaneousVelocity {
+    if (_samples.length < 2) return 0.0;
+    final last = _samples.last;
+    for (int i = _samples.length - 2; i >= 0; i--) {
+      final prev = _samples[i];
+      final dt = (last.timeMs - prev.timeMs) / 1000.0;
+      if (dt > 0.0) {
+        return last.delta / dt;
+      }
+    }
+    return 0.0;
+  }
 }
 
 class _WearOsScrollbarState extends State<WearOsScrollbar>
@@ -334,14 +348,22 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
     if (!widget.enableFling || !widget.enableSmoothScroll) return;
 
     final rawVelocity = _velocityTracker.calculateVelocity();
+    final lastInstantVelocity = _velocityTracker.lastInstantaneousVelocity;
     _velocityTracker.reset();
 
     final velocity = rawVelocity * widget.flingFactor;
-    const minFlingVelocity = 150.0;
+    final lastVelocity = lastInstantVelocity * widget.flingFactor;
+    const minFlingVelocity = 1000.0;
     const maxFlingVelocity = 2800.0;
     const rotaryFlingFriction = 0.055;
 
-    if (velocity.abs() < minFlingVelocity) return;
+    // A true rotary fling requires deliberate fast rotational velocity and
+    // must not be decelerating to a stop, preventing unwanted jumps upon release.
+    if (velocity.abs() < minFlingVelocity ||
+        lastVelocity.abs() < minFlingVelocity * 0.6 ||
+        velocity.sign != lastVelocity.sign) {
+      return;
+    }
 
     final currentOffset = widget.controller.offset;
     final position = widget.controller.position;
