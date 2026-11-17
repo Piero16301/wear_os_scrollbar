@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wear_os_scrollbar/wear_os_scrollbar.dart';
@@ -1069,8 +1070,7 @@ void main() {
         expect(
           repeatedLimitCalls,
           1,
-          reason:
-              'Continuous rotation against boundary must NOT repeat limit vibration',
+          reason: 'Continuous rotation against boundary must NOT repeat limit vibration',
         );
 
         // 3. Move away from boundary (scroll downwards)
@@ -1089,8 +1089,7 @@ void main() {
         expect(
           hitAgainLimitCalls,
           2,
-          reason:
-              'Reaching boundary again after moving away should trigger limit haptic once more',
+          reason: 'Reaching boundary again after moving away should trigger limit haptic once more',
         );
 
         // 5. Subsequent attempts into wall again do not vibrate
@@ -1155,55 +1154,56 @@ void main() {
       },
     );
 
-    testWidgets('Fast rotary spinning triggers fling inertia with physical decay', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              height: 200,
-              child: WearOsScrollbar(
-                controller: scrollController,
-                enableSmoothScroll: true,
-                enableFling: true,
-                rotarySensitivity: 0.4,
-                child: ListView.builder(
+    testWidgets(
+      'Fast rotary spinning triggers fling inertia with physical decay',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
                   controller: scrollController,
-                  itemCount: 200,
-                  itemBuilder: (context, index) =>
-                      ListTile(title: Text('Item $index')),
+                  enableSmoothScroll: true,
+                  enableFling: true,
+                  rotarySensitivity: 0.4,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 200,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(scrollController.offset, 0.0);
+        expect(scrollController.offset, 0.0);
 
-      // Emit a rapid burst of rotary scroll events (spinning fast)
-      // 5 events of 80px separated by 10ms (raw delta = 5 * 80 * 0.4 = 160px)
-      for (int i = 0; i < 5; i++) {
-        mockPlatform.emitScrollEvent(80.0);
-        await tester.pump(const Duration(milliseconds: 10));
-      }
+        // Emit a rapid burst of rotary scroll events (spinning fast)
+        // 5 events of 80px separated by 10ms (raw delta = 5 * 80 * 0.4 = 160px)
+        for (int i = 0; i < 5; i++) {
+          mockPlatform.emitScrollEvent(80.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
 
-      // Wait for fling debounce (40ms) and step into fling simulation
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pump(const Duration(milliseconds: 100));
+        // Wait for fling debounce (40ms) and step into fling simulation
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // Complete the fling simulation
-      await tester.pumpAndSettle();
+        // Complete the fling simulation
+        await tester.pumpAndSettle();
 
-      // With fling inertia, the final offset should have glided well beyond the raw delta sum of 160px
-      expect(
-        scrollController.offset,
-        greaterThan(200.0),
-        reason:
-            'Fast spin should fling with inertia beyond the raw event delta sum',
-      );
-    });
+        // With native Wear OS fling inertia (friction 0.015), the final offset
+        // should glide well beyond the raw delta sum of 160px.
+        expect(
+          scrollController.offset,
+          greaterThan(500.0),
+          reason: 'Fast spin should fling with native inertia well beyond the raw event delta sum',
+        );
+      },
+    );
 
     testWidgets(
       'enableFling: false disables fling inertia and only moves by event sum',
@@ -1243,8 +1243,7 @@ void main() {
         expect(
           scrollController.offset,
           closeTo(160.0, 0.1),
-          reason:
-              'When enableFling is false, scroll must stop exactly at accumulated delta',
+          reason: 'When enableFling is false, scroll must stop exactly at accumulated delta',
         );
       },
     );
@@ -1265,8 +1264,7 @@ void main() {
                   child: ListView.builder(
                     controller: scrollController,
                     itemCount: 10,
-                    itemExtent:
-                        50.0, // total 500px, viewport 200px -> maxScroll = 300px
+                    itemExtent: 50.0, // total 500px, viewport 200px -> maxScroll = 300px
                     itemBuilder: (context, index) =>
                         ListTile(title: Text('Item $index')),
                   ),
@@ -1566,8 +1564,7 @@ void main() {
         expect(
           scrollController.offset,
           closeTo(102.4, 0.1),
-          reason:
-              'Normal turning must not fling and must stop precisely at accumulated delta without an extra jump',
+          reason: 'Normal turning must not fling and must stop precisely at accumulated delta without an extra jump',
         );
       },
     );
@@ -1614,8 +1611,7 @@ void main() {
         expect(
           scrollController.offset,
           closeTo(100.0, 0.1),
-          reason:
-              'Decelerating to a stop must cancel fling and settle directly at accumulated offset',
+          reason: 'Decelerating to a stop must cancel fling and settle directly at accumulated offset',
         );
       },
     );
@@ -1660,8 +1656,186 @@ void main() {
         expect(
           scrollController.offset,
           closeTo(80.0, 0.1),
-          reason:
-              'Direction reversal on final tick must prevent ballistic fling in original direction',
+          reason: 'Direction reversal on final tick must prevent ballistic fling in original direction',
+        );
+      },
+    );
+
+    testWidgets(
+      'Accelerating human crown flick triggers full native fling inertia',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: true,
+                  enableFling: true,
+                  rotarySensitivity: 0.4,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 300,
+                    itemExtent: 50.0,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Accelerating flick profile: starts slow and ramps up to release speed
+        // Raw delta sum = (20 + 35 + 55 + 80) * 0.4 = 76.0px
+        for (final event in [20.0, 35.0, 55.0, 80.0]) {
+          mockPlatform.emitScrollEvent(event);
+          await tester.pump(const Duration(milliseconds: 12));
+        }
+
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        expect(
+          scrollController.offset,
+          greaterThan(400.0),
+          reason: 'Chronological velocity tracking must capture accelerating flick release velocity',
+        );
+      },
+    );
+
+    testWidgets(
+      'Consecutive crown flicks compound momentum in same direction and cancel on opposite direction',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: true,
+                  enableFling: true,
+                  rotarySensitivity: 0.4,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 300,
+                    itemExtent: 50.0,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Measure a single fast flick distance
+        for (int i = 0; i < 5; i++) {
+          mockPlatform.emitScrollEvent(80.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+        final singleFlickDistance = scrollController.offset;
+
+        // Reset to top and perform two consecutive flicks in the same direction
+        scrollController.jumpTo(0.0);
+        await tester.pumpAndSettle();
+
+        for (int i = 0; i < 5; i++) {
+          mockPlatform.emitScrollEvent(80.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+        // Enter active fling simulation
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 32));
+        final offsetAtSecondFlickStart = scrollController.offset;
+
+        // Second fast flick while first fling is still coasting forward
+        for (int i = 0; i < 5; i++) {
+          mockPlatform.emitScrollEvent(80.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+        final compoundedSecondDistance =
+            scrollController.offset - offsetAtSecondFlickStart;
+
+        expect(
+          compoundedSecondDistance,
+          greaterThan(singleFlickDistance + 300.0),
+          reason: 'Spinning again in the same direction during an active fling must compound momentum',
+        );
+
+        // Now start a fast positive fling and immediately flick in the opposite direction
+        scrollController.jumpTo(2500.0);
+        await tester.pumpAndSettle();
+
+        for (int i = 0; i < 5; i++) {
+          mockPlatform.emitScrollEvent(80.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 32));
+        final offsetBeforeOpposite = scrollController.offset;
+
+        for (int i = 0; i < 5; i++) {
+          mockPlatform.emitScrollEvent(-80.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        expect(
+          scrollController.offset,
+          lessThan(offsetBeforeOpposite - 400.0),
+          reason: 'Spinning in the opposite direction during a fling must cancel carried momentum and fling backward',
+        );
+      },
+    );
+
+    testWidgets(
+      'Rotary velocity tracker coalesces same-timestamp events without losing fling inertia',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                height: 200,
+                child: WearOsScrollbar(
+                  controller: scrollController,
+                  enableSmoothScroll: true,
+                  enableFling: true,
+                  rotarySensitivity: 0.4,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 300,
+                    itemExtent: 50.0,
+                    itemBuilder: (context, index) =>
+                        ListTile(title: Text('Item $index')),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Emit pairs of events within the same millisecond timestamp across 10ms intervals
+        for (int i = 0; i < 4; i++) {
+          mockPlatform.emitScrollEvent(40.0);
+          mockPlatform.emitScrollEvent(40.0);
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        expect(
+          scrollController.offset,
+          greaterThan(500.0),
+          reason: 'Same-timestamp rotary events should coalesce cleanly and still trigger native fling',
         );
       },
     );

@@ -121,3 +121,4 @@ app.*.symbols
 
 # VSCode
 .vscode/
+graphify-out/

@@ -35,7 +35,7 @@ Add the dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  wear_os_scrollbar: ^1.1.4
+  wear_os_scrollbar: ^1.1.5
 ```
 
 ## ⚙️ Configuration

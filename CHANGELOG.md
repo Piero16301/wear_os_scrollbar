@@ -1,3 +1,14 @@
+## 1.1.5
+
+* **Fix - Native Wear OS Rotary Fling Inertia & Velocity Tracking:**
+  * Fixed an issue where spinning the watch crown rapidly stopped scrolling earlier than native Wear OS system apps on Pixel Watch 3.
+  * Calibrated rotary fling simulation to match native Android/Wear OS scroll physics (`friction: 0.015`, `minFlingVelocity: 500.0`, `maxFlingVelocity: 8000.0`), delegating to the attached `ScrollPhysics` with a native clamping fallback.
+  * Fixed `_RotaryVelocityTracker` to integrate Impulse velocity chronologically from oldest to newest sample, reset on direction reversal, and coalesce same-millisecond rotary events.
+  * Added consecutive flick momentum compounding (`_carriedVelocity`), updated frame timestamps continuously during ballistic simulations, and synchronized sampling and wall clocks for consistent fling detection.
+* **Testing & Quality:**
+  * Expanded widget tests covering accelerated crown flicks, consecutive same-direction momentum compounding, opposite-direction fling cancellation, and same-timestamp event coalescing.
+  * Maintained 100% test coverage across all lines (`413/413`).
+
 ## 1.1.4
 
 * **Fix - Calibrated Rotary Fling & Zero-Jump Release:**

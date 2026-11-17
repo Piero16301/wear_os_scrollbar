@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
@@ -172,8 +173,18 @@ class _RotaryVelocityTracker {
         timeMs - _lastSampleTimeMs > _gestureThresholdMs) {
       _samples.clear();
     }
+    if (_samples.isNotEmpty && delta.sign != _samples.last.delta.sign) {
+      _samples.clear();
+    }
     _lastSampleTimeMs = timeMs;
-    _samples.add(_RotarySample(timeMs, delta));
+    if (_samples.isNotEmpty && timeMs == _samples.last.timeMs) {
+      _samples[_samples.length - 1] = _RotarySample(
+        timeMs,
+        _samples.last.delta + delta,
+      );
+    } else {
+      _samples.add(_RotarySample(timeMs, delta));
+    }
     final cutoff = timeMs - _horizonMs;
     _samples.removeWhere((s) => s.timeMs < cutoff);
   }
@@ -188,19 +199,16 @@ class _RotaryVelocityTracker {
     if (_samples.length < 2) return 0.0;
 
     double work = 0.0;
-    for (int i = _samples.length - 1; i >= 1; i--) {
+    for (int i = 1; i < _samples.length; i++) {
       final dt = (_samples[i].timeMs - _samples[i - 1].timeMs) / 1000.0;
-      if (dt <= 0.0) continue;
-
       final vCurr = _samples[i].delta / dt;
       final vPrev = work == 0.0 ? 0.0 : (work.sign * sqrt(2.0 * work.abs()));
       work += (vCurr - vPrev) * vCurr.abs();
-      if (i == _samples.length - 1) {
+      if (i == 1) {
         work *= 0.5;
       }
     }
 
-    if (work == 0.0 || work.isNaN) return 0.0;
     return work.sign * sqrt(2.0 * work.abs());
   }
 
@@ -208,14 +216,9 @@ class _RotaryVelocityTracker {
   double get lastInstantaneousVelocity {
     if (_samples.length < 2) return 0.0;
     final last = _samples.last;
-    for (int i = _samples.length - 2; i >= 0; i--) {
-      final prev = _samples[i];
-      final dt = (last.timeMs - prev.timeMs) / 1000.0;
-      if (dt > 0.0) {
-        return last.delta / dt;
-      }
-    }
-    return 0.0;
+    final prev = _samples[_samples.length - 2];
+    final dt = (last.timeMs - prev.timeMs) / 1000.0;
+    return last.delta / dt;
   }
 }
 
@@ -241,6 +244,29 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
   Timer? _flingTimer;
   Simulation? _activeSimulation;
   Duration? _simulationStartTime;
+  double _carriedVelocity = 0.0;
+  int? _lastSamplingTimeMs;
+  int? _lastWallTimeMs;
+  int _logicalTimeMs = 0;
+
+  int _nowMs() {
+    final samplingMs = GestureBinding.instance.samplingClock
+        .now()
+        .millisecondsSinceEpoch;
+    final wallMs = DateTime.now().millisecondsSinceEpoch;
+    if (_lastSamplingTimeMs == null || _lastWallTimeMs == null) {
+      _lastSamplingTimeMs = samplingMs;
+      _lastWallTimeMs = wallMs;
+      _logicalTimeMs = samplingMs;
+      return _logicalTimeMs;
+    }
+    final samplingDelta = samplingMs - _lastSamplingTimeMs!;
+    final wallDelta = wallMs - _lastWallTimeMs!;
+    _lastSamplingTimeMs = samplingMs;
+    _lastWallTimeMs = wallMs;
+    _logicalTimeMs += max(0, max(samplingDelta, wallDelta));
+    return _logicalTimeMs;
+  }
 
   @override
   void initState() {
@@ -285,7 +311,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
     }
 
     final scrollDelta = event * widget.rotarySensitivity;
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final nowMs = _nowMs();
 
     if (!widget.enableSmoothScroll) {
       final currentOffset = widget.controller.offset;
@@ -306,8 +332,18 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
       return;
     }
 
-    // Cancel any ongoing fling simulation if a new rotary event arrives
+    // Cancel any ongoing fling simulation if a new rotary event arrives,
+    // carrying forward momentum when continuing in the same direction.
     if (_activeSimulation != null) {
+      final simTime = (_simulationStartTime != null && _lastTickTime != null)
+          ? max(
+              0.0,
+              (_lastTickTime! - _simulationStartTime!).inMicroseconds /
+                  1000000.0,
+            )
+          : 0.0;
+      final currentVel = _activeSimulation!.dx(simTime);
+      _carriedVelocity = currentVel.sign == scrollDelta.sign ? currentVel : 0.0;
       _activeSimulation = null;
       _simulationStartTime = null;
     }
@@ -324,6 +360,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
         _triggerLimitHaptic();
         _overscrollHapticTriggered = true;
       }
+      _carriedVelocity = 0.0;
       _velocityTracker.reset();
       _flingTimer?.cancel();
     } else {
@@ -353,15 +390,17 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
 
     final velocity = rawVelocity * widget.flingFactor;
     final lastVelocity = lastInstantVelocity * widget.flingFactor;
-    const minFlingVelocity = 1000.0;
-    const maxFlingVelocity = 2800.0;
-    const rotaryFlingFriction = 0.055;
+    final carriedVelocity = _carriedVelocity;
+    _carriedVelocity = 0.0;
 
-    // A true rotary fling requires deliberate fast rotational velocity and
-    // must not be decelerating to a stop, preventing unwanted jumps upon release.
+    const minFlingVelocity = 500.0;
+    const maxFlingVelocity = 8000.0;
+    const rotaryFlingFriction = 0.015;
+
+    // A true rotary fling requires deliberate rotational velocity and
+    // must not have decelerated to a stop before release.
     if (velocity.abs() < minFlingVelocity ||
-        lastVelocity.abs() < minFlingVelocity * 0.6 ||
-        velocity.sign != lastVelocity.sign) {
+        lastVelocity.abs() < minFlingVelocity * 0.35) {
       return;
     }
 
@@ -373,13 +412,22 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
     if (velocity < 0 && currentOffset <= minScroll) return;
     if (velocity > 0 && currentOffset >= maxScroll) return;
 
-    final clampedVelocity = velocity.clamp(-maxFlingVelocity, maxFlingVelocity);
+    final effectiveVelocity = carriedVelocity.sign == velocity.sign
+        ? velocity + carriedVelocity * 0.6
+        : velocity;
 
-    final sim = ClampingScrollSimulation(
-      position: currentOffset,
-      velocity: clampedVelocity,
-      friction: rotaryFlingFriction,
+    final clampedVelocity = effectiveVelocity.clamp(
+      -maxFlingVelocity,
+      maxFlingVelocity,
     );
+
+    final sim =
+        position.physics.createBallisticSimulation(position, clampedVelocity) ??
+        ClampingScrollSimulation(
+          position: currentOffset,
+          velocity: clampedVelocity,
+          friction: rotaryFlingFriction,
+        );
 
     _activeSimulation = sim;
     _simulationStartTime = null;
@@ -403,6 +451,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
 
     // 1. Ballistic Fling Simulation
     if (_activeSimulation != null) {
+      _lastTickTime = elapsed;
       _simulationStartTime ??= elapsed;
       final simTime =
           (elapsed - _simulationStartTime!).inMicroseconds / 1000000.0;
@@ -485,6 +534,7 @@ class _WearOsScrollbarState extends State<WearOsScrollbar>
     _lastTickTime = null;
     _activeSimulation = null;
     _simulationStartTime = null;
+    _carriedVelocity = 0.0;
     _isRotaryDrivingScroll = false;
   }
 
